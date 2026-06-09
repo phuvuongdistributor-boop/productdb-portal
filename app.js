@@ -23,11 +23,11 @@ function render(list){
         card.className = 'card';
 
         card.innerHTML = `
-            <img src="${p.Image_URL || \"https://via.placeholder.com/600x600?text=No+Image\"}" alt="" onerror="this.src=\"https://via.placeholder.com/600x600?text=No+Image\"">
+            <img src="${p.Image_URL}" alt="">
             <div class="card-body">
                 <div class="code">${p.Code}</div>
-                <div class="card-title">${p.ProductName}</div>
-                <div class="category">${p.Category || ""}</div>
+                <h3>${p.ProductName}</h3>
+                <div>${p.Category || ''}</div>
                 <div class="price">
                     ${formatVND(p.SalePrice)}
                 </div>
