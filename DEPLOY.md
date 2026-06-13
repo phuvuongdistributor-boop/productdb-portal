@@ -1,6 +1,6 @@
 # ProductDB V2 Production Deployment
 
-## Required architecture
+## Production architecture
 
 - Deploy the included `Dockerfile` to a managed container host or Linux VPS.
 - Attach a persistent volume at `/app/runtime`.
@@ -9,9 +9,10 @@
 
 ## Render Blueprint
 
-The repository includes `render.yaml` configured for Docker in Render's Singapore
-region. It uses a Starter service and a 1 GB persistent disk mounted at `/app/runtime`.
-The free service is not suitable because Render free web services cannot attach a disk.
+The repository includes `render.yaml` configured for a free Docker trial in Render's
+Singapore region. Runtime files are stored under `/tmp/productdb-runtime` and can be
+deleted whenever the free service restarts or redeploys. Use this mode only to test the
+Portal. Production requires a paid service with a persistent disk mounted at `/app/runtime`.
 
 After the code is in GitHub:
 
@@ -29,7 +30,7 @@ Copy the names from `deploy/.env.example` into the hosting platform's secret man
 Never commit the Google service-account JSON or the production admin password.
 
 Share the LIVE Google Sheet with the service-account email as Viewer. The Portal uses
-the read-only Sheets scope and writes quotations, users, and leads only to `/app/runtime`.
+the read-only Sheets scope. In trial mode, quotations, users, and leads are temporary.
 
 ## Deployment checks
 
@@ -38,7 +39,8 @@ the read-only Sheets scope and writes quotations, users, and leads only to `/app
 3. Create a real sale account and disable `sale.demo` if it was migrated.
 4. Confirm a sale cannot open `/dashboard` or `/users`.
 5. Confirm `/catalog` opens without login and contains no prices.
-6. Restart the container and confirm users, leads, and quotations still exist.
+6. Before production, add persistent storage and confirm users, leads, and quotations
+   survive a container restart.
 
 ## URLs
 
