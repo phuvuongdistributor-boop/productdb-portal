@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import hashlib
@@ -111,6 +112,18 @@ def upsert_user(username: str, display_name: str, role: str, password: str = "",
 
 
 def authenticate(username: str, password: str) -> dict | None:
+    bootstrap_username = os.getenv("PRODUCTDB_ADMIN_USERNAME", "admin").strip().casefold()
+    bootstrap_password = os.getenv("PRODUCTDB_ADMIN_PASSWORD", "").strip()
+    if (
+        bootstrap_password
+        and username.strip().casefold() == bootstrap_username
+        and hmac.compare_digest(password, bootstrap_password)
+    ):
+        return {
+            "username": bootstrap_username,
+            "display_name": os.getenv("PRODUCTDB_ADMIN_NAME", "Quản trị viên").strip(),
+            "role": "admin",
+        }
     user = get_user(username)
     if not user or not user.get("active", False):
         return None
