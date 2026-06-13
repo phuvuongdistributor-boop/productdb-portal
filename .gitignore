@@ -1,0 +1,10 @@
+.env
+*.log
+__pycache__/
+*.pyc
+runtime/
+logs/
+exports/quotations/*
+quotation_v2/data/*.json
+config/auth_users.json
+lead_management/leads.xlsx

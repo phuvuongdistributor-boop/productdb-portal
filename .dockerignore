@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+.git
+.env
+logs
+exports
+quotation_v2/data
+lead_management/leads.xlsx
+config/auth_users.json
+master_v2/BACKUP
