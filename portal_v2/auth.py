@@ -144,6 +144,9 @@ def logout() -> None:
 def login_screen() -> None:
     st.markdown("## Đăng nhập ProductDB V2")
     st.caption("Dành cho nhân viên sale và quản trị viên.")
+    bootstrap_password_configured = bool(os.getenv("PRODUCTDB_ADMIN_PASSWORD", "").strip())
+    if not bootstrap_password_configured:
+        st.warning("Render chưa nhận biến PRODUCTDB_ADMIN_PASSWORD.")
     with st.form("login-form"):
         username = st.text_input("Tên đăng nhập")
         password = st.text_input("Mật khẩu", type="password")
