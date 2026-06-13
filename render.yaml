@@ -3,27 +3,23 @@ services:
     name: productdb-v2-portal
     runtime: docker
     region: singapore
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /_stcore/health
     autoDeployTrigger: commit
-    disk:
-      name: productdb-runtime
-      mountPath: /app/runtime
-      sizeGB: 1
     envVars:
       - key: PRODUCTDB_DATA_SOURCE
         value: drive
       - key: PRODUCTDB_USERS_PATH
-        value: /app/runtime/auth_users.json
+        value: /tmp/productdb-runtime/auth_users.json
       - key: PRODUCTDB_QUOTATIONS_PATH
-        value: /app/runtime/quotations
+        value: /tmp/productdb-runtime/quotations
       - key: PRODUCTDB_LEADS_PATH
-        value: /app/runtime/leads.xlsx
+        value: /tmp/productdb-runtime/leads.xlsx
       - key: PRODUCTDB_ADMIN_USERNAME
         value: admin
       - key: PRODUCTDB_ADMIN_NAME
-        value: Quản trị viên
+        value: Quan tri vien
       - key: PRODUCTDB_ADMIN_PASSWORD
         sync: false
       - key: GOOGLE_SERVICE_ACCOUNT_JSON
