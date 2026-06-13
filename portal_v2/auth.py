@@ -19,23 +19,46 @@ ROLES = ["admin", "sale"]
 
 
 def _load_users() -> dict:
+    bootstrap_password = os.getenv("PRODUCTDB_ADMIN_PASSWORD", "").strip()
+    bootstrap_username = os.getenv("PRODUCTDB_ADMIN_USERNAME", "admin").strip().lower()
+    bootstrap_fingerprint = (
+        hashlib.sha256(bootstrap_password.encode("utf-8")).hexdigest()
+        if bootstrap_password else ""
+    )
     if not USERS_PATH.exists():
-        bootstrap_password = os.getenv("PRODUCTDB_ADMIN_PASSWORD", "").strip()
         if bootstrap_password:
             salt, password_hash = hash_password(bootstrap_password)
             data = {
                 "users": [{
-                    "username": os.getenv("PRODUCTDB_ADMIN_USERNAME", "admin").strip().lower(),
+                    "username": bootstrap_username,
                     "display_name": os.getenv("PRODUCTDB_ADMIN_NAME", "Quản trị viên").strip(),
                     "role": "admin", "active": True,
                     "salt": salt, "password_hash": password_hash,
                     "created_at": datetime.now().isoformat(timespec="seconds"),
-                }]
+                }],
+                "bootstrap_password_fingerprint": bootstrap_fingerprint,
             }
             _save_users(data)
             return data
         return {"users": []}
-    return json.loads(USERS_PATH.read_text(encoding="utf-8"))
+    data = json.loads(USERS_PATH.read_text(encoding="utf-8"))
+    if bootstrap_password and data.get("bootstrap_password_fingerprint") != bootstrap_fingerprint:
+        users = data.setdefault("users", [])
+        admin = next((user for user in users if user.get("username") == bootstrap_username), None)
+        if admin is None:
+            admin = {"username": bootstrap_username, "created_at": datetime.now().isoformat(timespec="seconds")}
+            users.append(admin)
+        salt, password_hash = hash_password(bootstrap_password)
+        admin.update({
+            "display_name": os.getenv("PRODUCTDB_ADMIN_NAME", "Quản trị viên").strip(),
+            "role": "admin",
+            "active": True,
+            "salt": salt,
+            "password_hash": password_hash,
+        })
+        data["bootstrap_password_fingerprint"] = bootstrap_fingerprint
+        _save_users(data)
+    return data
 
 
 def _save_users(data: dict) -> None:
@@ -146,3 +169,4 @@ def require_auth(roles: list[str] | None = None) -> dict:
             logout()
             st.switch_page("app.py")
     return user
+
