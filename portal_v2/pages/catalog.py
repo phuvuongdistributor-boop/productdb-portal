@@ -1,10 +1,12 @@
+
 from __future__ import annotations
 
 import html
 
 import streamlit as st
 
-from data_loader import find_product, load_products, resolve_image_source
+from components.catalog_image import catalog_image
+from data_loader import find_product, load_products
 from ui import apply_theme, source_label
 
 
@@ -45,7 +47,7 @@ if code:
     else:
         image_col, detail_col = st.columns([1, 1.25], gap="large")
         with image_col:
-            image = resolve_image_source(product.get("Image_URL", ""))
+            image = catalog_image(product.get("Image_URL", ""))
             if image:
                 st.image(image, width="stretch")
         with detail_col:
@@ -91,7 +93,7 @@ for start in range(0, min(len(filtered), limit), 4):
     for container, (_, product) in zip(columns, filtered.iloc[start:start + 4].iterrows()):
         with container:
             st.markdown('<div class="customer-card">', unsafe_allow_html=True)
-            image = resolve_image_source(product.get("Image_URL", ""))
+            image = catalog_image(product.get("Image_URL", ""))
             if image:
                 st.image(image, width="stretch")
             st.markdown(f'<div class="customer-code">{html.escape(str(product.get("Code", "")))}</div>', unsafe_allow_html=True)
@@ -109,3 +111,4 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
