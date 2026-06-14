@@ -1,10 +1,10 @@
-
 from __future__ import annotations
 
 import os
 import json
 from pathlib import Path
 from urllib.parse import urlparse
+from zipfile import ZipFile
 
 import pandas as pd
 import streamlit as st
@@ -13,7 +13,28 @@ import streamlit as st
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MASTER_DB_PATH = PROJECT_ROOT / "master_v2" / "MASTER_DB.xlsx"
 DATA_STATUS_PATH = PROJECT_ROOT / "config" / "portal_data_status.json"
+BUNDLED_DATA_PATH = PROJECT_ROOT / "deployment" / "productdb_data_bundle.zip"
+BUNDLED_DATA_MARKER = PROJECT_ROOT / ".productdb_data_bundle"
 LAST_DATA_SOURCE = "Local MASTER_DB.xlsx"
+
+
+def _install_bundled_data() -> None:
+    if not BUNDLED_DATA_PATH.is_file():
+        return
+    signature = f"{BUNDLED_DATA_PATH.stat().st_size}:{BUNDLED_DATA_PATH.stat().st_mtime_ns}"
+    if BUNDLED_DATA_MARKER.is_file() and BUNDLED_DATA_MARKER.read_text(encoding="utf-8") == signature:
+        return
+    allowed_roots = {"master_v2", "GEVI_GHE", "EECE_T8", "assets"}
+    with ZipFile(BUNDLED_DATA_PATH) as archive:
+        for member in archive.infolist():
+            parts = Path(member.filename).parts
+            if not parts or parts[0] not in allowed_roots or ".." in parts:
+                continue
+            archive.extract(member, PROJECT_ROOT)
+    BUNDLED_DATA_MARKER.write_text(signature, encoding="utf-8")
+
+
+_install_bundled_data()
 
 
 @st.cache_data(show_spinner=False)
@@ -75,4 +96,3 @@ def resolve_image_source(value: object) -> str | Path | None:
 
 def count_products_with_images(products: pd.DataFrame) -> int:
     return sum(resolve_image_source(value) is not None for value in products["Image_URL"])
-
