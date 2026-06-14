@@ -20,9 +20,12 @@ st.markdown(
     .catalog-hero { background:linear-gradient(120deg,#102a43,#176b87); color:white;
       padding:24px 30px; border-radius:18px; margin-bottom:18px; }
     .catalog-hero h1 { color:white; margin:0; }
-    .customer-card { background:white; border:1px solid #dce4eb; border-radius:15px;
-      padding:12px; min-height:390px; }
-    .customer-card h3 { font-size:1rem; min-height:2.8rem; margin:.5rem 0; }
+    [data-testid="stVerticalBlockBorderWrapper"] { background:white; border-radius:15px; }
+    [data-testid="stImage"] img { border-radius:10px; display:block; }
+    .catalog-image-placeholder { height:180px; display:grid; place-items:center;
+      background:#eef3f7; border-radius:10px; color:#667085; margin-bottom:.5rem; }
+    .catalog-product-name { font-size:1rem; font-weight:700; line-height:1.4;
+      min-height:2.8rem; margin:.45rem 0; color:#102a43; }
     .customer-code { color:#176b87; font-weight:700; font-size:.85rem; }
     </style>
     """,
@@ -92,15 +95,22 @@ for start in range(0, min(len(filtered), limit), 4):
     columns = st.columns(4)
     for container, (_, product) in zip(columns, filtered.iloc[start:start + 4].iterrows()):
         with container:
-            st.markdown('<div class="customer-card">', unsafe_allow_html=True)
-            image = catalog_image(product.get("Image_URL", ""))
-            if image:
-                st.image(image, width="stretch")
-            st.markdown(f'<div class="customer-code">{html.escape(str(product.get("Code", "")))}</div>', unsafe_allow_html=True)
-            st.markdown(f'<h3>{html.escape(str(product.get("ProductName", "")))}</h3>', unsafe_allow_html=True)
-            st.caption(source_label(product.get("Source_Group", "")))
-            st.link_button("Xem chi tiết", f"catalog?code={product.get('Code', '')}", width="stretch")
-            st.markdown("</div>", unsafe_allow_html=True)
+            with st.container(border=True):
+                image = catalog_image(product.get("Image_URL", ""))
+                if image:
+                    st.image(image, width="stretch")
+                else:
+                    st.markdown(
+                        '<div class="catalog-image-placeholder">Chưa có hình ảnh</div>',
+                        unsafe_allow_html=True,
+                    )
+                st.markdown(f'<div class="customer-code">{html.escape(str(product.get("Code", "")))}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="catalog-product-name">{html.escape(str(product.get("ProductName", "")))}</div>',
+                    unsafe_allow_html=True,
+                )
+                st.caption(source_label(product.get("Source_Group", "")))
+                st.link_button("Xem chi tiết", f"catalog?code={product.get('Code', '')}", width="stretch")
 
 st.markdown(
     """
