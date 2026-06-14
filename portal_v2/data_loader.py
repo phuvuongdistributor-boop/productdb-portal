@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import os
@@ -12,6 +13,7 @@ import streamlit as st
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MASTER_DB_PATH = PROJECT_ROOT / "master_v2" / "MASTER_DB.xlsx"
 DATA_STATUS_PATH = PROJECT_ROOT / "config" / "portal_data_status.json"
+LAST_DATA_SOURCE = "Local MASTER_DB.xlsx"
 
 
 @st.cache_data(show_spinner=False)
@@ -22,12 +24,21 @@ def _read_master(path: str, modified_ns: int) -> pd.DataFrame:
 
 
 def load_products() -> pd.DataFrame:
+    global LAST_DATA_SOURCE
     if os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() == "drive":
         try:
             from .drive_loader import load_products_from_drive
         except ImportError:
             from drive_loader import load_products_from_drive
-        return load_products_from_drive()
+        try:
+            products = load_products_from_drive()
+            LAST_DATA_SOURCE = "Google Sheets MASTER_DB"
+            return products
+        except Exception:
+            if not MASTER_DB_PATH.exists():
+                raise
+            LAST_DATA_SOURCE = "Local MASTER_DB.xlsx (Drive fallback)"
+            return _read_master(str(MASTER_DB_PATH), MASTER_DB_PATH.stat().st_mtime_ns)
     if not MASTER_DB_PATH.exists():
         raise FileNotFoundError(
             f"Missing {MASTER_DB_PATH}. Run: python portal_v2/build_master_db.py"
@@ -36,6 +47,8 @@ def load_products() -> pd.DataFrame:
 
 
 def load_data_status() -> dict:
+    if os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() == "drive":
+        return {"source": LAST_DATA_SOURCE}
     if not DATA_STATUS_PATH.exists():
         return {"source": "Local MASTER_DB.xlsx"}
     with DATA_STATUS_PATH.open(encoding="utf-8") as status_file:
@@ -62,3 +75,4 @@ def resolve_image_source(value: object) -> str | Path | None:
 
 def count_products_with_images(products: pd.DataFrame) -> int:
     return sum(resolve_image_source(value) is not None for value in products["Image_URL"])
+
