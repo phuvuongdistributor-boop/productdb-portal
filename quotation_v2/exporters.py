@@ -13,6 +13,8 @@ from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Alignment, Font, PatternFill
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
+from quotation_v2.watermark import apply_phone_watermark
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FONT_REGULAR_CANDIDATES = [
@@ -24,7 +26,6 @@ FONT_BOLD_CANDIDATES = [
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
 ]
 HOTLINE = "0929.878.666"
-IMAGE_WATERMARK = "0929.382.666"
 
 
 def _font(size: int, bold: bool = False):
@@ -50,47 +51,20 @@ def _image_bytes(source: object) -> bytes | None:
         return None
 
 
-def _apply_watermark(image: Image.Image) -> Image.Image:
-    base = image.convert("RGBA")
-    font_size = max(11, min(base.size) // 7)
-    font = _font(font_size, bold=True)
-    text_layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
-    text_draw = ImageDraw.Draw(text_layer)
-    box = text_draw.textbbox((0, 0), IMAGE_WATERMARK, font=font)
-    text_width = box[2] - box[0]
-    text_height = box[3] - box[1]
-    label = Image.new(
-        "RGBA",
-        (text_width + font_size, text_height + font_size),
-        (255, 255, 255, 0),
-    )
-    label_draw = ImageDraw.Draw(label)
-    label_draw.text(
-        (font_size // 2, font_size // 3),
-        IMAGE_WATERMARK,
-        fill=(255, 255, 255, 105),
-        stroke_width=max(1, font_size // 14),
-        stroke_fill=(20, 35, 50, 65),
-        font=font,
-    )
-    label = label.rotate(18, expand=True, resample=Image.Resampling.BICUBIC)
-    position = ((base.width - label.width) // 2, (base.height - label.height) // 2)
-    text_layer.alpha_composite(label, position)
-    return Image.alpha_composite(base, text_layer).convert("RGB")
-
-
 def _thumbnail(source: object, size: tuple[int, int]) -> Image.Image:
     raw = _image_bytes(source)
     if raw:
         try:
             image = Image.open(BytesIO(raw)).convert("RGB")
-            return _apply_watermark(ImageOps.contain(image, size, Image.Resampling.LANCZOS))
+            return apply_phone_watermark(
+                ImageOps.contain(image, size, Image.Resampling.LANCZOS), opacity=42
+            )
         except (OSError, ValueError):
             pass
     image = Image.new("RGB", size, "#f2f4f7")
     draw = ImageDraw.Draw(image)
     draw.text((12, size[1] // 2 - 10), "Chưa có ảnh", fill="#667085", font=_font(16))
-    return _apply_watermark(image)
+    return apply_phone_watermark(image, opacity=42)
 
 
 def _money(value: object) -> str:
