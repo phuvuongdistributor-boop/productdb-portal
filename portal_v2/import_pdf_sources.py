@@ -268,6 +268,35 @@ def write_source(path: Path, rows: list[dict]) -> None:
     workbook.close()
 
 
+def merge_highest_price(*sources: list[dict]) -> list[dict]:
+    """Keep one imported row per code, preferring the highest database price."""
+    selected: dict[str, dict] = {}
+    order: list[str] = []
+    for rows in sources:
+        for row in rows:
+            key = str(row.get("Code", "")).strip().casefold()
+            if not key:
+                continue
+            if key not in selected:
+                selected[key] = row.copy()
+                order.append(key)
+                continue
+            current_price = float(selected[key].get("BasePrice", 0) or 0)
+            candidate_price = float(row.get("BasePrice", 0) or 0)
+            if candidate_price > current_price:
+                selected[key] = row.copy()
+
+    merged = []
+    for key in order:
+        row = selected[key]
+        base_price = float(row.get("BasePrice", 0) or 0)
+        row["SaleFactor"] = 1.2
+        row["SalePrice"] = round(base_price * 1.2)
+        row["Source_Group"] = "GHE_NHAP"
+        merged.append(row)
+    return merged
+
+
 def main() -> None:
     gevi_pdf = PDF_DIR / "BANG GIA GHE - Gevi Furniture.pdf"
     t8_pdf = PROJECT_ROOT / "exports" / "pdf_intake" / "t8" / "source_t8.pdf"
@@ -283,9 +312,12 @@ def main() -> None:
         T8_PRODUCTS, t8_images(t8_pdf), "EECE_T8",
         "", "PDF: Bảng giá chuẩn T8.pdf",
     )
-    write_source(PROJECT_ROOT / "GEVI_GHE" / "GEVI_GHE_FINAL_V2.xlsx", gevi_rows)
-    write_source(PROJECT_ROOT / "EECE_T8" / "EECE_T8_FINAL_V2.xlsx", t8_rows)
-    print(f"Created {len(gevi_rows) + len(t8_rows)} source rows and product images.")
+    imported_rows = merge_highest_price(gevi_rows, t8_rows)
+    write_source(PROJECT_ROOT / "GHE_NHAP" / "GHE_NHAP_FINAL_V2.xlsx", imported_rows)
+    print(
+        f"Created {len(imported_rows)} GHE_NHAP source rows and product images "
+        "(duplicate codes keep the highest BasePrice)."
+    )
 
 
 if __name__ == "__main__":

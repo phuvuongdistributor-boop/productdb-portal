@@ -24,7 +24,7 @@ def _install_bundled_data() -> None:
     signature = f"{BUNDLED_DATA_PATH.stat().st_size}:{BUNDLED_DATA_PATH.stat().st_mtime_ns}"
     if BUNDLED_DATA_MARKER.is_file() and BUNDLED_DATA_MARKER.read_text(encoding="utf-8") == signature:
         return
-    allowed_roots = {"master_v2", "GEVI_GHE", "EECE_T8", "assets"}
+    allowed_roots = {"master_v2", "GHE_NHAP", "assets"}
     with ZipFile(BUNDLED_DATA_PATH) as archive:
         for member in archive.infolist():
             parts = Path(member.filename).parts
