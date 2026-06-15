@@ -7,6 +7,7 @@ SOURCE_LABELS = {
     "BAN_HOP": "Bàn họp",
     "BAN_MAY_TINH": "Bàn máy tính",
     "BAN_VAN_PHONG": "Bàn văn phòng",
+    "GHE_NHAP": "Ghế nhập",
     "GHE_VAN_PHONG": "Ghế văn phòng",
     "GIA_KE_SAT": "Giá kệ sắt",
     "HOC_SAT": "Hộc sắt",
