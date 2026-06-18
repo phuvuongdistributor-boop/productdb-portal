@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import html
@@ -6,7 +5,7 @@ import html
 import streamlit as st
 
 from components.catalog_image import catalog_image
-from data_loader import find_product, load_products
+from data_loader import load_products_or_stop
 from ui import apply_theme, source_label
 
 
@@ -43,8 +42,10 @@ st.markdown(
 )
 
 code = str(st.query_params.get("code", "")).strip()
+products = load_products_or_stop()
 if code:
-    product = find_product(code)
+    matches = products[products["Code"].astype(str).str.casefold() == code.casefold()]
+    product = None if matches.empty else matches.iloc[0]
     if product is None:
         st.error("Không tìm thấy sản phẩm.")
     else:
@@ -69,7 +70,6 @@ if code:
             st.link_button("Xem toàn bộ catalog", "catalog", width="stretch")
     st.stop()
 
-products = load_products()
 query_col, source_col, category_col = st.columns([2.2, 1.4, 1.4])
 query = query_col.text_input("Tìm sản phẩm", placeholder="Nhập mã, tên hoặc mô tả...")
 sources = sorted(value for value in products["Source_Group"].astype(str).unique() if value.strip())
@@ -121,4 +121,3 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
