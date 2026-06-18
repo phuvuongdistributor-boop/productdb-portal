@@ -18,14 +18,51 @@ BUNDLED_DATA_MARKER = PROJECT_ROOT / ".productdb_data_bundle"
 LAST_DATA_SOURCE = "Local MASTER_DB.xlsx"
 
 
+def _load_drive_bundle_config() -> dict:
+    config_path = PROJECT_ROOT / "config" / "drive_config.json"
+    if not config_path.is_file():
+        return {}
+    try:
+        with config_path.open(encoding="utf-8") as config_file:
+            return json.load(config_file).get("data_bundle", {})
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _download_drive_bundle(bundle_config: dict) -> Path | None:
+    file_id = str(bundle_config.get("file_id", "")).strip()
+    if not file_id or os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() != "drive":
+        return None
+    marker = PROJECT_ROOT / ".productdb_drive_bundle"
+    if marker.is_file() and marker.read_text(encoding="utf-8").strip() == file_id:
+        return None
+    try:
+        try:
+            from .drive_loader import _credentials
+        except ImportError:
+            from drive_loader import _credentials
+        from google.auth.transport.requests import AuthorizedSession
+    except Exception:
+        return None
+    endpoint = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
+    response = AuthorizedSession(_credentials()).get(endpoint, timeout=120)
+    response.raise_for_status()
+    runtime_bundle = Path(os.getenv("PRODUCTDB_BUNDLE_PATH", "/tmp/productdb_data_bundle.zip"))
+    runtime_bundle.write_bytes(response.content)
+    marker.write_text(file_id, encoding="utf-8")
+    return runtime_bundle
+
+
 def _install_bundled_data() -> None:
-    if not BUNDLED_DATA_PATH.is_file():
+    drive_bundle_path = _download_drive_bundle(_load_drive_bundle_config())
+    bundle_path = drive_bundle_path or BUNDLED_DATA_PATH
+    if not bundle_path.is_file():
         return
-    signature = f"{BUNDLED_DATA_PATH.stat().st_size}:{BUNDLED_DATA_PATH.stat().st_mtime_ns}"
+    signature = f"{bundle_path.stat().st_size}:{bundle_path.stat().st_mtime_ns}"
     if BUNDLED_DATA_MARKER.is_file() and BUNDLED_DATA_MARKER.read_text(encoding="utf-8") == signature:
         return
     allowed_roots = {"master_v2", "GHE_NHAP", "assets"}
-    with ZipFile(BUNDLED_DATA_PATH) as archive:
+    with ZipFile(bundle_path) as archive:
         for member in archive.infolist():
             parts = Path(member.filename).parts
             if not parts or parts[0] not in allowed_roots or ".." in parts:
