@@ -4,7 +4,7 @@ import streamlit as st
 
 from auth import require_auth
 from cart import cart_count
-from data_loader import load_products
+from data_loader import load_products_or_stop
 from public_links import catalog_url
 from ui import apply_theme, source_label
 
@@ -20,7 +20,7 @@ catalog_link.link_button("Mở catalog khách hàng", catalog_url(), width="stre
 with st.expander("Link gửi khách hàng"):
     st.text_input("Catalog không hiển thị giá", value=catalog_url(), disabled=True)
 
-products = load_products()
+products = load_products_or_stop()
 source_counts = products["Source_Group"].astype(str).value_counts()
 sources = source_counts.index.tolist()
 tab_labels = [f"Tất cả ({len(products):,})"] + [f"{source_label(source)} ({source_counts[source]:,})" for source in sources]
