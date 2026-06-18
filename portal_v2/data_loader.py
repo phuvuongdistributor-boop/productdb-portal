@@ -16,6 +16,21 @@ DATA_STATUS_PATH = PROJECT_ROOT / "config" / "portal_data_status.json"
 BUNDLED_DATA_PATH = PROJECT_ROOT / "deployment" / "productdb_data_bundle.zip"
 BUNDLED_DATA_MARKER = PROJECT_ROOT / ".productdb_data_bundle"
 LAST_DATA_SOURCE = "Local MASTER_DB.xlsx"
+DRIVE_HEALTH = {
+    "mode": os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower(),
+    "sheet_ok": None,
+    "sheet_message": "Chưa kiểm tra Google Sheet.",
+    "bundle_ok": None,
+    "bundle_message": "Chưa kiểm tra bundle ảnh.",
+}
+
+
+def drive_health() -> dict:
+    return dict(DRIVE_HEALTH)
+
+
+def _allow_local_fallback() -> bool:
+    return os.getenv("PRODUCTDB_ALLOW_LOCAL_FALLBACK", "").strip().lower() in {"1", "true", "yes"}
 
 
 def _load_drive_bundle_config() -> dict:
@@ -32,9 +47,13 @@ def _load_drive_bundle_config() -> dict:
 def _download_drive_bundle(bundle_config: dict) -> Path | None:
     file_id = str(bundle_config.get("file_id", "")).strip()
     if not file_id or os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() != "drive":
+        DRIVE_HEALTH["bundle_ok"] = None
+        DRIVE_HEALTH["bundle_message"] = "Không cấu hình tải bundle ảnh từ Drive."
         return None
     marker = PROJECT_ROOT / ".productdb_drive_bundle"
     if marker.is_file() and marker.read_text(encoding="utf-8").strip() == file_id:
+        DRIVE_HEALTH["bundle_ok"] = True
+        DRIVE_HEALTH["bundle_message"] = "Bundle ảnh Drive đã được tải trong phiên chạy này."
         return None
     try:
         try:
@@ -42,7 +61,9 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         except ImportError:
             from drive_loader import _credentials
         from google.auth.transport.requests import AuthorizedSession
-    except Exception:
+    except Exception as error:
+        DRIVE_HEALTH["bundle_ok"] = False
+        DRIVE_HEALTH["bundle_message"] = f"Thiếu thư viện/credential để tải bundle ảnh: {error}"
         return None
     try:
         endpoint = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
@@ -51,8 +72,12 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         runtime_bundle = Path(os.getenv("PRODUCTDB_BUNDLE_PATH", "/tmp/productdb_data_bundle.zip"))
         runtime_bundle.write_bytes(response.content)
         marker.write_text(file_id, encoding="utf-8")
+        DRIVE_HEALTH["bundle_ok"] = True
+        DRIVE_HEALTH["bundle_message"] = f"Đã tải bundle ảnh từ Drive: {file_id}"
         return runtime_bundle
-    except Exception:
+    except Exception as error:
+        DRIVE_HEALTH["bundle_ok"] = False
+        DRIVE_HEALTH["bundle_message"] = f"Không tải được bundle ảnh từ Drive: {error}"
         return None
 
 
@@ -94,8 +119,14 @@ def load_products() -> pd.DataFrame:
         try:
             products = load_products_from_drive()
             LAST_DATA_SOURCE = "Google Sheets MASTER_DB"
+            DRIVE_HEALTH["sheet_ok"] = True
+            DRIVE_HEALTH["sheet_message"] = f"Đã đọc Google Sheet LIVE: {len(products):,} dòng."
             return products
-        except Exception:
+        except Exception as error:
+            DRIVE_HEALTH["sheet_ok"] = False
+            DRIVE_HEALTH["sheet_message"] = f"Không đọc được Google Sheet LIVE: {error}"
+            if not _allow_local_fallback():
+                raise RuntimeError(DRIVE_HEALTH["sheet_message"]) from error
             if not MASTER_DB_PATH.exists():
                 raise
             LAST_DATA_SOURCE = "Local MASTER_DB.xlsx (Drive fallback)"
@@ -105,6 +136,14 @@ def load_products() -> pd.DataFrame:
             f"Missing {MASTER_DB_PATH}. Run: python portal_v2/build_master_db.py"
         )
     return _read_master(str(MASTER_DB_PATH), MASTER_DB_PATH.stat().st_mtime_ns)
+
+
+def load_products_or_stop() -> pd.DataFrame:
+    try:
+        return load_products()
+    except (FileNotFoundError, RuntimeError) as error:
+        st.error(str(error))
+        st.stop()
 
 
 def load_data_status() -> dict:
