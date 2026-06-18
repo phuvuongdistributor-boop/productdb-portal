@@ -5,7 +5,7 @@ import streamlit as st
 from auth import require_auth
 from components.filters import apply_filters
 from components.product_card import render_product_card
-from data_loader import load_products
+from data_loader import load_products_or_stop
 from cart import cart_count
 from ui import apply_theme
 
@@ -20,7 +20,7 @@ if notice:
 head_left, head_right = st.columns([4, 1])
 with head_right:
     st.page_link("pages/quotation.py", label=f"Báo giá ({cart_count()})")
-products = load_products()
+products = load_products_or_stop()
 query = st.text_input("Tìm theo Code, ProductName hoặc Description", placeholder="Nhập mã hoặc tên sản phẩm...")
 filtered = apply_filters(products)
 
