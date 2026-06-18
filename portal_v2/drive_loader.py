@@ -10,6 +10,8 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DRIVE_CONFIG_PATH = PROJECT_ROOT / "config" / "drive_config.json"
 SHEETS_READONLY_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly"
+DRIVE_READONLY_SCOPE = "https://www.googleapis.com/auth/drive.readonly"
+GOOGLE_READONLY_SCOPES = [SHEETS_READONLY_SCOPE, DRIVE_READONLY_SCOPE]
 
 
 def load_drive_config() -> dict:
@@ -30,11 +32,11 @@ def _credentials():
     if inline_json:
         info = json.loads(inline_json)
         return service_account.Credentials.from_service_account_info(
-            info, scopes=[SHEETS_READONLY_SCOPE]
+            info, scopes=GOOGLE_READONLY_SCOPES
         )
     if credentials_path:
         return service_account.Credentials.from_service_account_file(
-            credentials_path, scopes=[SHEETS_READONLY_SCOPE]
+            credentials_path, scopes=GOOGLE_READONLY_SCOPES
         )
     raise RuntimeError(
         "Drive mode requires GOOGLE_SERVICE_ACCOUNT_JSON or "
