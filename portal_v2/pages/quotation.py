@@ -7,7 +7,7 @@ import streamlit as st
 
 from auth import list_users, require_auth
 from cart import add_product, cart_count, clear_cart, get_cart, remove_product
-from data_loader import load_products
+from data_loader import load_products_or_stop
 from quotation_v2.exporters import export_excel, export_pdf, export_png
 from quotation_v2.quotation_service import STATUSES, save_quotation
 from ui import apply_theme
@@ -66,7 +66,7 @@ if new_col.button("Tạo báo giá mới"):
     ]:
         st.session_state.pop(key, None)
     st.rerun()
-products = load_products()
+products = load_products_or_stop()
 cart = get_cart()
 for item in cart.values():
     if not item.get("Image_URL"):
