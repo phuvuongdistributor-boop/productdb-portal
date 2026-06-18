@@ -44,13 +44,16 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         from google.auth.transport.requests import AuthorizedSession
     except Exception:
         return None
-    endpoint = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
-    response = AuthorizedSession(_credentials()).get(endpoint, timeout=120)
-    response.raise_for_status()
-    runtime_bundle = Path(os.getenv("PRODUCTDB_BUNDLE_PATH", "/tmp/productdb_data_bundle.zip"))
-    runtime_bundle.write_bytes(response.content)
-    marker.write_text(file_id, encoding="utf-8")
-    return runtime_bundle
+    try:
+        endpoint = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
+        response = AuthorizedSession(_credentials()).get(endpoint, timeout=120)
+        response.raise_for_status()
+        runtime_bundle = Path(os.getenv("PRODUCTDB_BUNDLE_PATH", "/tmp/productdb_data_bundle.zip"))
+        runtime_bundle.write_bytes(response.content)
+        marker.write_text(file_id, encoding="utf-8")
+        return runtime_bundle
+    except Exception:
+        return None
 
 
 def _install_bundled_data() -> None:
