@@ -5,7 +5,7 @@ import streamlit as st
 from auth import require_auth
 from components.image_viewer import render_image
 from components.product_card import format_price
-from data_loader import find_product, load_products
+from data_loader import load_products_or_stop
 from public_links import catalog_url
 from cart import add_product, cart_count
 from ui import apply_theme
@@ -20,8 +20,12 @@ if not code:
     st.stop()
 
 row_id = st.session_state.get("selected_row_id")
-products = load_products()
-product = products.loc[int(row_id)] if row_id is not None and int(row_id) in products.index else find_product(str(code))
+products = load_products_or_stop()
+if row_id is not None and int(row_id) in products.index:
+    product = products.loc[int(row_id)]
+else:
+    matches = products[products["Code"].astype(str).str.casefold() == str(code).casefold()]
+    product = None if matches.empty else matches.iloc[0]
 if product is None:
     st.error(f"Không tìm thấy sản phẩm: {code}")
     st.stop()
