@@ -3,7 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from auth import require_auth
-from data_loader import count_products_with_images, load_data_status, load_products
+from data_loader import count_products_with_images, drive_health, load_data_status, load_products_or_stop
 from public_links import catalog_url
 from ui import apply_theme
 
@@ -48,16 +48,25 @@ st.markdown(
 )
 
 try:
-    products = load_products()
-except FileNotFoundError as error:
+    products = load_products_or_stop()
+except (FileNotFoundError, RuntimeError) as error:
     st.error(str(error))
     st.stop()
 
 data_status = load_data_status()
+health = drive_health()
 st.caption(
     f"Nguồn: {data_status.get('source', 'MASTER_DB.xlsx')} | "
     f"Cập nhật: {data_status.get('synced_at', 'chưa xác định')}"
 )
+if health.get("sheet_ok") is True:
+    st.success(health.get("sheet_message", "Google Sheet LIVE đã kết nối."))
+elif health.get("sheet_ok") is False:
+    st.error(health.get("sheet_message", "Google Sheet LIVE lỗi."))
+if health.get("bundle_ok") is True:
+    st.info(health.get("bundle_message", "Bundle ảnh Drive đã sẵn sàng."))
+elif health.get("bundle_ok") is False:
+    st.warning(health.get("bundle_message", "Bundle ảnh Drive chưa sẵn sàng."))
 
 metrics = st.columns(5)
 metrics[0].metric("Tổng SKU", f"{len(products):,}")
