@@ -10,6 +10,8 @@ services:
     envVars:
       - key: PRODUCTDB_DATA_SOURCE
         value: drive
+      - key: PRODUCTDB_ALLOW_LOCAL_FALLBACK
+        value: "true"
       - key: PRODUCTDB_USERS_PATH
         value: /tmp/productdb-runtime/auth_users.json
       - key: PRODUCTDB_QUOTATIONS_PATH
