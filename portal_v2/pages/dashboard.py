@@ -14,7 +14,7 @@ apply_theme()
 require_auth(["admin"])
 st.title("Dashboard")
 st.caption(
-    "App build: drive-bundle-refresh-v4 | "
+    "App build: ghe-nhap-4k-bundle-v1 | "
     f"Render commit: {os.getenv('RENDER_GIT_COMMIT', 'unknown')[:7]}"
 )
 products = load_products_or_stop()
