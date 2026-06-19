@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
+from urllib.parse import quote
 
 import pandas as pd
 
@@ -55,11 +57,21 @@ def load_products_from_drive() -> pd.DataFrame:
     config = load_drive_config()["master_live"]
     spreadsheet_id = config["spreadsheet_id"]
     sheet_name = config["sheet_name"]
+    value_range = quote(f"{sheet_name}!A:W", safe="")
     endpoint = (
         f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}"
-        f"/values/{sheet_name}!A:W?valueRenderOption=UNFORMATTED_VALUE"
+        f"/values/{value_range}?valueRenderOption=UNFORMATTED_VALUE"
     )
-    response = AuthorizedSession(_credentials()).get(endpoint, timeout=60)
+    session = AuthorizedSession(_credentials())
+    response = None
+    for attempt in range(3):
+        response = session.get(endpoint, timeout=60)
+        if response.status_code not in {429, 500, 502, 503, 504}:
+            break
+        if attempt < 2:
+            time.sleep(2**attempt)
+    if response is None:
+        raise RuntimeError("Google Sheets request was not attempted.")
     response.raise_for_status()
     values = response.json().get("values", [])
     if not values:
