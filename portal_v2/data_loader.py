@@ -50,11 +50,14 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         DRIVE_HEALTH["bundle_ok"] = None
         DRIVE_HEALTH["bundle_message"] = "Drive image bundle download is not configured."
         return None
+    runtime_bundle = Path(os.getenv("PRODUCTDB_BUNDLE_PATH", "/tmp/productdb_data_bundle.zip"))
     marker = PROJECT_ROOT / ".productdb_drive_bundle"
     if marker.is_file() and marker.read_text(encoding="utf-8").strip() == file_id:
-        DRIVE_HEALTH["bundle_ok"] = True
-        DRIVE_HEALTH["bundle_message"] = "Drive image bundle was already downloaded in this runtime."
-        return None
+        if runtime_bundle.is_file():
+            DRIVE_HEALTH["bundle_ok"] = True
+            DRIVE_HEALTH["bundle_message"] = "Drive image bundle was already downloaded in this runtime."
+            return runtime_bundle
+        marker.unlink(missing_ok=True)
     try:
         try:
             from .drive_loader import _credentials
@@ -69,7 +72,6 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         endpoint = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
         response = AuthorizedSession(_credentials()).get(endpoint, timeout=120)
         response.raise_for_status()
-        runtime_bundle = Path(os.getenv("PRODUCTDB_BUNDLE_PATH", "/tmp/productdb_data_bundle.zip"))
         runtime_bundle.write_bytes(response.content)
         marker.write_text(file_id, encoding="utf-8")
         DRIVE_HEALTH["bundle_ok"] = True
@@ -82,12 +84,15 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
 
 
 def _install_bundled_data() -> None:
-    if BUNDLED_DATA_PATH.is_file():
+    drive_bundle_path = _download_drive_bundle(_load_drive_bundle_config())
+    if drive_bundle_path is not None:
+        bundle_path = drive_bundle_path
+    elif BUNDLED_DATA_PATH.is_file():
         bundle_path = BUNDLED_DATA_PATH
         DRIVE_HEALTH["bundle_ok"] = True
         DRIVE_HEALTH["bundle_message"] = "Using the local image/data bundle included in this deploy."
     else:
-        bundle_path = _download_drive_bundle(_load_drive_bundle_config())
+        bundle_path = None
     if bundle_path is None or not bundle_path.is_file():
         return
     signature = f"{bundle_path.stat().st_size}:{bundle_path.stat().st_mtime_ns}"
