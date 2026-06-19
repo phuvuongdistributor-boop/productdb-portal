@@ -84,8 +84,13 @@ def _install_bundled_data() -> None:
         bundle_path = drive_bundle_path
     elif BUNDLED_DATA_PATH.is_file():
         bundle_path = BUNDLED_DATA_PATH
-        DRIVE_HEALTH["bundle_ok"] = True
-        DRIVE_HEALTH["bundle_message"] = "Using the local image/data bundle included in this deploy."
+        if os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() == "drive":
+            DRIVE_HEALTH["bundle_ok"] = False
+            previous_message = DRIVE_HEALTH.get("bundle_message") or "Drive image bundle was not downloaded."
+            DRIVE_HEALTH["bundle_message"] = f"{previous_message} Falling back to local deploy bundle."
+        else:
+            DRIVE_HEALTH["bundle_ok"] = True
+            DRIVE_HEALTH["bundle_message"] = "Using the local image/data bundle included in this deploy."
     else:
         bundle_path = None
     if bundle_path is None or not bundle_path.is_file():
