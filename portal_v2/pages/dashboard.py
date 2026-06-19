@@ -14,7 +14,7 @@ apply_theme()
 require_auth(["admin"])
 st.title("Dashboard")
 st.caption(
-    "App build: ghe-nhap-gallery-v2 | "
+    "App build: ghe-nhap-live-light-v3 | "
     f"Render commit: {os.getenv('RENDER_GIT_COMMIT', 'unknown')[:7]}"
 )
 products = load_products_or_stop()
