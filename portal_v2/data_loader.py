@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 from zipfile import ZipFile
@@ -186,6 +187,51 @@ def resolve_image_source(value: object) -> str | Path | None:
     local_path = Path(source)
     candidates = [local_path, PROJECT_ROOT / local_path, PROJECT_ROOT.parent / local_path]
     return next((path for path in candidates if path.is_file()), None)
+
+
+def _safe_segment(value: object) -> str:
+    text = str(value or "").strip()
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", text).strip("_")
+
+
+def _split_image_values(value: object) -> list[str]:
+    text = str(value or "").strip()
+    if not text:
+        return []
+    return [part.strip() for part in re.split(r"[\n;|]+", text) if part.strip()]
+
+
+def resolve_product_images(product: object) -> list[str | Path]:
+    try:
+        image_value = product.get("Image_URL", "")
+        code = _safe_segment(product.get("Code", ""))
+        source_group = _safe_segment(product.get("Source_Group", "")).lower()
+    except AttributeError:
+        image_value = ""
+        code = ""
+        source_group = ""
+
+    images: list[str | Path] = []
+    seen: set[str] = set()
+
+    def add_image(candidate: str | Path | None) -> None:
+        if not candidate:
+            return
+        key = str(candidate)
+        if key in seen:
+            return
+        seen.add(key)
+        images.append(candidate)
+
+    for value in _split_image_values(image_value):
+        add_image(resolve_image_source(value))
+
+    image_root = PROJECT_ROOT / "assets" / "product_images_multi" / source_group / code
+    if code and source_group and image_root.is_dir():
+        for path in sorted(image_root.iterdir()):
+            if path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
+                add_image(path)
+    return images
 
 
 def count_products_with_images(products: pd.DataFrame) -> int:
