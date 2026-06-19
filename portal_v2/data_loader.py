@@ -64,9 +64,11 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         DRIVE_HEALTH["bundle_message"] = f"Missing dependency/credential for Drive image bundle: {error}"
         return None
     try:
-        endpoint = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
+        endpoint = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media&supportsAllDrives=true"
         response = AuthorizedSession(_credentials()).get(endpoint, timeout=120)
-        response.raise_for_status()
+        if not response.ok:
+            detail = response.text[:1000]
+            raise RuntimeError(f"HTTP {response.status_code}: {detail}")
         runtime_bundle.write_bytes(response.content)
         marker.write_text(file_id, encoding="utf-8")
         DRIVE_HEALTH["bundle_ok"] = True
