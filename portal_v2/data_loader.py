@@ -52,12 +52,7 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         return None
     runtime_bundle = Path(os.getenv("PRODUCTDB_BUNDLE_PATH", "/tmp/productdb_data_bundle.zip"))
     marker = PROJECT_ROOT / ".productdb_drive_bundle"
-    if marker.is_file() and marker.read_text(encoding="utf-8").strip() == file_id:
-        if runtime_bundle.is_file():
-            DRIVE_HEALTH["bundle_ok"] = True
-            DRIVE_HEALTH["bundle_message"] = "Drive image bundle was already downloaded in this runtime."
-            return runtime_bundle
-        marker.unlink(missing_ok=True)
+    marker.unlink(missing_ok=True)
     try:
         try:
             from .drive_loader import _credentials
