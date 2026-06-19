@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import json
+import os
 from pathlib import Path
 from urllib.parse import urlparse
 from zipfile import ZipFile
@@ -19,9 +19,9 @@ LAST_DATA_SOURCE = "Local MASTER_DB.xlsx"
 DRIVE_HEALTH = {
     "mode": os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower(),
     "sheet_ok": None,
-    "sheet_message": "Chưa kiểm tra Google Sheet.",
+    "sheet_message": "Google Sheet has not been checked.",
     "bundle_ok": None,
-    "bundle_message": "Chưa kiểm tra bundle ảnh.",
+    "bundle_message": "Image bundle has not been checked.",
 }
 
 
@@ -48,12 +48,12 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
     file_id = str(bundle_config.get("file_id", "")).strip()
     if not file_id or os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() != "drive":
         DRIVE_HEALTH["bundle_ok"] = None
-        DRIVE_HEALTH["bundle_message"] = "Không cấu hình tải bundle ảnh từ Drive."
+        DRIVE_HEALTH["bundle_message"] = "Drive image bundle download is not configured."
         return None
     marker = PROJECT_ROOT / ".productdb_drive_bundle"
     if marker.is_file() and marker.read_text(encoding="utf-8").strip() == file_id:
         DRIVE_HEALTH["bundle_ok"] = True
-        DRIVE_HEALTH["bundle_message"] = "Bundle ảnh Drive đã được tải trong phiên chạy này."
+        DRIVE_HEALTH["bundle_message"] = "Drive image bundle was already downloaded in this runtime."
         return None
     try:
         try:
@@ -63,7 +63,7 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         from google.auth.transport.requests import AuthorizedSession
     except Exception as error:
         DRIVE_HEALTH["bundle_ok"] = False
-        DRIVE_HEALTH["bundle_message"] = f"Thiếu thư viện/credential để tải bundle ảnh: {error}"
+        DRIVE_HEALTH["bundle_message"] = f"Missing dependency/credential for Drive image bundle: {error}"
         return None
     try:
         endpoint = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
@@ -73,18 +73,22 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         runtime_bundle.write_bytes(response.content)
         marker.write_text(file_id, encoding="utf-8")
         DRIVE_HEALTH["bundle_ok"] = True
-        DRIVE_HEALTH["bundle_message"] = f"Đã tải bundle ảnh từ Drive: {file_id}"
+        DRIVE_HEALTH["bundle_message"] = f"Downloaded image bundle from Drive: {file_id}"
         return runtime_bundle
     except Exception as error:
         DRIVE_HEALTH["bundle_ok"] = False
-        DRIVE_HEALTH["bundle_message"] = f"Không tải được bundle ảnh từ Drive: {error}"
+        DRIVE_HEALTH["bundle_message"] = f"Could not download image bundle from Drive: {error}"
         return None
 
 
 def _install_bundled_data() -> None:
-    drive_bundle_path = _download_drive_bundle(_load_drive_bundle_config())
-    bundle_path = drive_bundle_path or BUNDLED_DATA_PATH
-    if not bundle_path.is_file():
+    if BUNDLED_DATA_PATH.is_file():
+        bundle_path = BUNDLED_DATA_PATH
+        DRIVE_HEALTH["bundle_ok"] = True
+        DRIVE_HEALTH["bundle_message"] = "Using the local image/data bundle included in this deploy."
+    else:
+        bundle_path = _download_drive_bundle(_load_drive_bundle_config())
+    if bundle_path is None or not bundle_path.is_file():
         return
     signature = f"{bundle_path.stat().st_size}:{bundle_path.stat().st_mtime_ns}"
     if BUNDLED_DATA_MARKER.is_file() and BUNDLED_DATA_MARKER.read_text(encoding="utf-8") == signature:
@@ -120,11 +124,11 @@ def load_products() -> pd.DataFrame:
             products = load_products_from_drive()
             LAST_DATA_SOURCE = "Google Sheets MASTER_DB"
             DRIVE_HEALTH["sheet_ok"] = True
-            DRIVE_HEALTH["sheet_message"] = f"Đã đọc Google Sheet LIVE: {len(products):,} dòng."
+            DRIVE_HEALTH["sheet_message"] = f"Read Google Sheet LIVE: {len(products):,} rows."
             return products
         except Exception as error:
             DRIVE_HEALTH["sheet_ok"] = False
-            DRIVE_HEALTH["sheet_message"] = f"Không đọc được Google Sheet LIVE: {error}"
+            DRIVE_HEALTH["sheet_message"] = f"Could not read Google Sheet LIVE: {error}"
             if not _allow_local_fallback():
                 raise RuntimeError(DRIVE_HEALTH["sheet_message"]) from error
             if not MASTER_DB_PATH.exists():
@@ -175,3 +179,11 @@ def resolve_image_source(value: object) -> str | Path | None:
 
 def count_products_with_images(products: pd.DataFrame) -> int:
     return sum(resolve_image_source(value) is not None for value in products["Image_URL"])
+
+
+def unresolved_image_rows(products: pd.DataFrame) -> pd.DataFrame:
+    if "Image_URL" not in products:
+        return products.iloc[0:0].copy()
+    image_values = products["Image_URL"].astype(str).str.strip()
+    unresolved_mask = image_values.ne("") & products["Image_URL"].map(lambda value: resolve_image_source(value) is None)
+    return products[unresolved_mask].copy()
