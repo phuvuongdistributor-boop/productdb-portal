@@ -71,10 +71,12 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         marker.write_text(file_id, encoding="utf-8")
         DRIVE_HEALTH["bundle_ok"] = True
         DRIVE_HEALTH["bundle_message"] = f"Downloaded image bundle from Drive: {file_id}"
+        print(f"ProductDB bundle: downloaded Drive bundle {file_id} to {runtime_bundle}", flush=True)
         return runtime_bundle
     except Exception as error:
         DRIVE_HEALTH["bundle_ok"] = False
         DRIVE_HEALTH["bundle_message"] = f"Could not download image bundle from Drive: {error}"
+        print(f"ProductDB bundle: Drive download failed: {error}", flush=True)
         return None
 
 
@@ -88,9 +90,11 @@ def _install_bundled_data() -> None:
             DRIVE_HEALTH["bundle_ok"] = False
             previous_message = DRIVE_HEALTH.get("bundle_message") or "Drive image bundle was not downloaded."
             DRIVE_HEALTH["bundle_message"] = f"{previous_message} Falling back to local deploy bundle."
+            print("ProductDB bundle: falling back to local deploy bundle in drive mode", flush=True)
         else:
             DRIVE_HEALTH["bundle_ok"] = True
             DRIVE_HEALTH["bundle_message"] = "Using the local image/data bundle included in this deploy."
+            print("ProductDB bundle: using local deploy bundle", flush=True)
     else:
         bundle_path = None
     if bundle_path is None or not bundle_path.is_file():
