@@ -3,7 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from auth import require_auth
-from components.image_viewer import render_image
+from components.image_viewer import render_product_gallery
 from components.product_card import format_price
 from data_loader import load_products_or_stop
 from public_links import catalog_url
@@ -33,7 +33,7 @@ if product is None:
 st.title(str(product.get("ProductName", "Sản phẩm")))
 left, right = st.columns([1, 1.25], gap="large")
 with left:
-    render_image(product.get("Image_URL"), str(product.get("Code", "")))
+    render_product_gallery(product)
 with right:
     st.caption(str(product.get("Code", "")))
     st.markdown(f"## {format_price(product.get('SalePrice'))}")
