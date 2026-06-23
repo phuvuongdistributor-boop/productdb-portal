@@ -40,6 +40,29 @@ def _allow_local_fallback() -> bool:
     return os.getenv("PRODUCTDB_ALLOW_LOCAL_FALLBACK", "").strip().lower() in {"1", "true", "yes"}
 
 
+def _expected_master_rows() -> int | None:
+    config_path = PROJECT_ROOT / "config" / "drive_config.json"
+    if not config_path.is_file():
+        return None
+    try:
+        with config_path.open(encoding="utf-8") as config_file:
+            value = json.load(config_file).get("master_live", {}).get("rows")
+        return int(value) if value else None
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        return None
+
+
+def _read_local_fallback_master() -> pd.DataFrame:
+    products = _read_master(str(MASTER_DB_PATH), MASTER_DB_PATH.stat().st_mtime_ns)
+    expected_rows = _expected_master_rows()
+    if expected_rows is not None and len(products) != expected_rows:
+        raise RuntimeError(
+            f"Local fallback MASTER_DB has {len(products):,} rows, "
+            f"but Drive config expects {expected_rows:,}. Refusing stale fallback."
+        )
+    return products
+
+
 def _load_drive_bundle_config() -> dict:
     config_path = PROJECT_ROOT / "config" / "drive_config.json"
     if not config_path.is_file():
@@ -152,7 +175,7 @@ def load_products() -> pd.DataFrame:
             if not MASTER_DB_PATH.exists():
                 raise
             LAST_DATA_SOURCE = "Local MASTER_DB.xlsx (Drive fallback)"
-            return _read_master(str(MASTER_DB_PATH), MASTER_DB_PATH.stat().st_mtime_ns)
+            return _read_local_fallback_master()
     if not MASTER_DB_PATH.exists():
         raise FileNotFoundError(
             f"Missing {MASTER_DB_PATH}. Run: python portal_v2/build_master_db.py"
