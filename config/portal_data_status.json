@@ -1,8 +1,15 @@
 {
-  "source": "Google Drive LIVE",
-  "spreadsheet_id": "1DzFdtBw951WFpUGWkozXLpaDtolkKoIxPrWX-3svsG8",
-  "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1DzFdtBw951WFpUGWkozXLpaDtolkKoIxPrWX-3svsG8/edit",
-  "synced_at": "2026-06-18T15:32:00+07:00",
-  "rows": 3090,
-  "columns": 23
+  "source": "Google Sheet + public image URL recovery final",
+  "spreadsheet_id": "1-KhoUZ_A88aKLNKdiqwbb0HWD8aE5MNYp9wrDBB4dmw",
+  "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1-KhoUZ_A88aKLNKdiqwbb0HWD8aE5MNYp9wrDBB4dmw/edit",
+  "synced_at": "2026-06-22T19:41:06+07:00",
+  "rows": 3228,
+  "columns": 23,
+  "master_rows": 3228,
+  "remaining_pdf_image_paths": 0,
+  "no_image_required_accessory_rows": 10,
+  "parent_set_web_url_rows": 41,
+  "public_http_image_rows": 3038,
+  "local_asset_image_rows": 180,
+  "last_updated": "2026-06-22T19:41:06+07:00"
 }
