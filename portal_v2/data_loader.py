@@ -17,8 +17,14 @@ DATA_STATUS_PATH = PROJECT_ROOT / "config" / "portal_data_status.json"
 BUNDLED_DATA_PATH = PROJECT_ROOT / "deployment" / "productdb_data_bundle.zip"
 BUNDLED_DATA_MARKER = PROJECT_ROOT / ".productdb_data_bundle"
 LAST_DATA_SOURCE = "Local MASTER_DB.xlsx"
+
+
+def _data_source_mode() -> str:
+    return os.getenv("PRODUCTDB_DATA_SOURCE", "drive").strip().lower()
+
+
 DRIVE_HEALTH = {
-    "mode": os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower(),
+    "mode": _data_source_mode(),
     "sheet_ok": None,
     "sheet_message": "Google Sheet has not been checked.",
     "bundle_ok": None,
@@ -47,7 +53,7 @@ def _load_drive_bundle_config() -> dict:
 
 def _download_drive_bundle(bundle_config: dict) -> Path | None:
     file_id = str(bundle_config.get("file_id", "")).strip()
-    if not file_id or os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() != "drive":
+    if not file_id or _data_source_mode() != "drive":
         DRIVE_HEALTH["bundle_ok"] = None
         DRIVE_HEALTH["bundle_message"] = "Drive image bundle download is not configured."
         return None
@@ -89,7 +95,7 @@ def _install_bundled_data() -> None:
         bundle_path = drive_bundle_path
     elif BUNDLED_DATA_PATH.is_file():
         bundle_path = BUNDLED_DATA_PATH
-        if os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() == "drive":
+        if _data_source_mode() == "drive":
             DRIVE_HEALTH["bundle_ok"] = False
             previous_message = DRIVE_HEALTH.get("bundle_message") or "Drive image bundle was not downloaded."
             DRIVE_HEALTH["bundle_message"] = f"{previous_message} Falling back to local deploy bundle."
@@ -127,7 +133,7 @@ def _read_master(path: str, modified_ns: int) -> pd.DataFrame:
 
 def load_products() -> pd.DataFrame:
     global LAST_DATA_SOURCE
-    if os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() == "drive":
+    if _data_source_mode() == "drive":
         try:
             from .drive_loader import load_products_from_drive
         except ImportError:
@@ -163,7 +169,7 @@ def load_products_or_stop() -> pd.DataFrame:
 
 
 def load_data_status() -> dict:
-    if os.getenv("PRODUCTDB_DATA_SOURCE", "local").strip().lower() == "drive":
+    if _data_source_mode() == "drive":
         return {"source": LAST_DATA_SOURCE}
     if not DATA_STATUS_PATH.exists():
         return {"source": "Local MASTER_DB.xlsx"}
