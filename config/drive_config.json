@@ -2,10 +2,10 @@
   "project_folder_url": "https://drive.google.com/drive/folders/1N2gbQDtBIMAa9OebRbTamibquSFr3_6x",
   "master_v2_folder_url": "https://drive.google.com/drive/folders/1UMZLys-Nn8WAvfzZGAfAtdITfjJ3pJHX",
   "master_live": {
-    "spreadsheet_id": "1DzFdtBw951WFpUGWkozXLpaDtolkKoIxPrWX-3svsG8",
-    "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1DzFdtBw951WFpUGWkozXLpaDtolkKoIxPrWX-3svsG8/edit",
+    "spreadsheet_id": "1-KhoUZ_A88aKLNKdiqwbb0HWD8aE5MNYp9wrDBB4dmw",
+    "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1-KhoUZ_A88aKLNKdiqwbb0HWD8aE5MNYp9wrDBB4dmw/edit",
     "sheet_name": "MASTER_DB",
-    "rows": 3090,
+    "rows": 3228,
     "columns": 23
   },
   "audit_live": {
@@ -15,6 +15,6 @@
   "data_bundle": {
     "file_id": "1vqwNz9RwoYJ-iACiEXyE4O0z9l-W8R89",
     "file_url": "https://drive.google.com/file/d/1vqwNz9RwoYJ-iACiEXyE4O0z9l-W8R89/view",
-    "description": "MASTER_DB, GHE_NHAP master, and GHE_NHAP local images for Render startup"
+    "description": "MASTER_DB, GHE_NHAP master, local images, recovered web images, Vinamax images, and portal startup data"
   }
 }
