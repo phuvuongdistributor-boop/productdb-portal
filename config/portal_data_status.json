@@ -1,8 +1,8 @@
 {
-  "source": "Google Sheet LIVE 3228 + recovered images + Drive auth users",
-  "spreadsheet_id": "1-KhoUZ_A88aKLNKdiqwbb0HWD8aE5MNYp9wrDBB4dmw",
-  "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1-KhoUZ_A88aKLNKdiqwbb0HWD8aE5MNYp9wrDBB4dmw/edit",
-  "synced_at": "2026-06-25T16:59:39+07:00",
+  "source": "Google Sheet LIVE 3228 + recovered images + rembg imported source images + Drive auth users",
+  "spreadsheet_id": "1_NaGPC3ASpDJqBceIUa5cHh0vlfHwby1Q4_ELUIftl4",
+  "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1_NaGPC3ASpDJqBceIUa5cHh0vlfHwby1Q4_ELUIftl4/edit",
+  "synced_at": "2026-06-25T23:02:55+07:00",
   "rows": 3228,
   "columns": 23,
   "master_rows": 3228,
@@ -16,5 +16,8 @@
   "vinamax_source_label": "Tủ Gia Công",
   "auth_users_store": "Google Drive productdb_auth_users.json",
   "auth_users_file_id": "1fjqkUtHCpmbR4YPJAvlFR_9fdAWKjoq6",
-  "last_updated": "2026-06-25T16:59:39+07:00"
+  "imported_source_rembg_rows": 138,
+  "imported_source_rembg_ready": 138,
+  "data_bundle_size_bytes": 13368865,
+  "last_updated": "2026-06-25T23:02:55+07:00"
 }
