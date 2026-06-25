@@ -17,6 +17,7 @@ DATA_STATUS_PATH = PROJECT_ROOT / "config" / "portal_data_status.json"
 BUNDLED_DATA_PATH = PROJECT_ROOT / "deployment" / "productdb_data_bundle.zip"
 BUNDLED_DATA_MARKER = PROJECT_ROOT / ".productdb_data_bundle"
 LAST_DATA_SOURCE = "Local MASTER_DB.xlsx"
+IMAGE_BUNDLE_RETRY_DONE = False
 
 
 def _data_source_mode() -> str:
@@ -209,6 +210,7 @@ def find_product(code: str) -> pd.Series | None:
 
 
 def resolve_image_source(value: object) -> str | Path | None:
+    global IMAGE_BUNDLE_RETRY_DONE
     source = str(value or "").strip()
     if not source:
         return None
@@ -217,7 +219,16 @@ def resolve_image_source(value: object) -> str | Path | None:
         return source
     local_path = Path(source)
     candidates = [local_path, PROJECT_ROOT / local_path, PROJECT_ROOT.parent / local_path]
-    return next((path for path in candidates if path.is_file()), None)
+    found = next((path for path in candidates if path.is_file()), None)
+    if found is not None:
+        return found
+    if not IMAGE_BUNDLE_RETRY_DONE:
+        IMAGE_BUNDLE_RETRY_DONE = True
+        _install_bundled_data()
+        found = next((path for path in candidates if path.is_file()), None)
+        if found is not None:
+            return found
+    return None
 
 
 def _safe_segment(value: object) -> str:
