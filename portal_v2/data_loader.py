@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 from zipfile import ZipFile
 import re
@@ -113,6 +114,24 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
         DRIVE_HEALTH["bundle_ok"] = False
         DRIVE_HEALTH["bundle_message"] = f"Could not download image bundle from Drive: {error}"
         print(f"ProductDB bundle: Drive download failed: {error}", flush=True)
+    try:
+        public_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        request = Request(public_url, headers={"User-Agent": "ProductDB-V2/1.0"})
+        with urlopen(request, timeout=120) as response:
+            payload = response.read()
+        if len(payload) < 1024 or payload[:64].lower().startswith(b"<!doctype html"):
+            raise RuntimeError("Drive public download did not return a zip payload.")
+        runtime_bundle.write_bytes(payload)
+        LAST_BUNDLE_PATH = runtime_bundle
+        marker.write_text(file_id, encoding="utf-8")
+        DRIVE_HEALTH["bundle_ok"] = True
+        DRIVE_HEALTH["bundle_message"] = f"Downloaded image bundle from Drive public URL: {file_id}"
+        print(f"ProductDB bundle: downloaded public Drive bundle {file_id} to {runtime_bundle}", flush=True)
+        return runtime_bundle
+    except Exception as public_error:
+        DRIVE_HEALTH["bundle_ok"] = False
+        DRIVE_HEALTH["bundle_message"] = f"Could not download image bundle from Drive: {public_error}"
+        print(f"ProductDB bundle: public Drive download failed: {public_error}", flush=True)
         return None
 
 
