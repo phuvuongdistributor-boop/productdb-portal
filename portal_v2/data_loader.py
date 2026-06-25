@@ -18,6 +18,7 @@ BUNDLED_DATA_PATH = PROJECT_ROOT / "deployment" / "productdb_data_bundle.zip"
 BUNDLED_DATA_MARKER = PROJECT_ROOT / ".productdb_data_bundle"
 LAST_DATA_SOURCE = "Local MASTER_DB.xlsx"
 IMAGE_BUNDLE_RETRY_DONE = False
+LAST_BUNDLE_PATH: Path | None = None
 
 
 def _data_source_mode() -> str:
@@ -76,6 +77,7 @@ def _load_drive_bundle_config() -> dict:
 
 
 def _download_drive_bundle(bundle_config: dict) -> Path | None:
+    global LAST_BUNDLE_PATH
     file_id = str(bundle_config.get("file_id", "")).strip()
     if not file_id or _data_source_mode() != "drive":
         DRIVE_HEALTH["bundle_ok"] = None
@@ -101,6 +103,7 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
             detail = response.text[:1000]
             raise RuntimeError(f"HTTP {response.status_code}: {detail}")
         runtime_bundle.write_bytes(response.content)
+        LAST_BUNDLE_PATH = runtime_bundle
         marker.write_text(file_id, encoding="utf-8")
         DRIVE_HEALTH["bundle_ok"] = True
         DRIVE_HEALTH["bundle_message"] = f"Downloaded image bundle from Drive: {file_id}"
@@ -114,6 +117,7 @@ def _download_drive_bundle(bundle_config: dict) -> Path | None:
 
 
 def _install_bundled_data() -> None:
+    global LAST_BUNDLE_PATH
     drive_bundle_path = _download_drive_bundle(_load_drive_bundle_config())
     if drive_bundle_path is not None:
         bundle_path = drive_bundle_path
@@ -132,6 +136,7 @@ def _install_bundled_data() -> None:
         bundle_path = None
     if bundle_path is None or not bundle_path.is_file():
         return
+    LAST_BUNDLE_PATH = bundle_path
     signature = f"{bundle_path.stat().st_size}:{bundle_path.stat().st_mtime_ns}"
     if BUNDLED_DATA_MARKER.is_file() and BUNDLED_DATA_MARKER.read_text(encoding="utf-8") == signature:
         return
@@ -143,6 +148,29 @@ def _install_bundled_data() -> None:
                 continue
             archive.extract(member, PROJECT_ROOT)
     BUNDLED_DATA_MARKER.write_text(signature, encoding="utf-8")
+
+
+def _extract_bundle_member(relative_path: Path) -> Path | None:
+    parts = relative_path.parts
+    if not parts or parts[0] not in {"master_v2", "GHE_NHAP", "assets"} or ".." in parts:
+        return None
+    member_name = relative_path.as_posix()
+    bundle_path = LAST_BUNDLE_PATH
+    if bundle_path is None or not bundle_path.is_file():
+        bundle_path = _download_drive_bundle(_load_drive_bundle_config())
+    if (bundle_path is None or not bundle_path.is_file()) and BUNDLED_DATA_PATH.is_file():
+        bundle_path = BUNDLED_DATA_PATH
+    if bundle_path is None or not bundle_path.is_file():
+        return None
+    try:
+        with ZipFile(bundle_path) as archive:
+            if member_name not in archive.namelist():
+                return None
+            archive.extract(member_name, PROJECT_ROOT)
+    except Exception:
+        return None
+    extracted = PROJECT_ROOT / relative_path
+    return extracted if extracted.is_file() else None
 
 
 _install_bundled_data()
@@ -226,6 +254,10 @@ def resolve_image_source(value: object) -> str | Path | None:
         IMAGE_BUNDLE_RETRY_DONE = True
         _install_bundled_data()
         found = next((path for path in candidates if path.is_file()), None)
+        if found is not None:
+            return found
+    if not local_path.is_absolute():
+        found = _extract_bundle_member(local_path)
         if found is not None:
             return found
     return None
