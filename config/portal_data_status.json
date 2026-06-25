@@ -1,8 +1,8 @@
 {
-  "source": "Google Sheet + public image URL recovery final",
+  "source": "Google Sheet LIVE 3228 + recovered images + Drive auth users",
   "spreadsheet_id": "1-KhoUZ_A88aKLNKdiqwbb0HWD8aE5MNYp9wrDBB4dmw",
   "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1-KhoUZ_A88aKLNKdiqwbb0HWD8aE5MNYp9wrDBB4dmw/edit",
-  "synced_at": "2026-06-22T19:41:06+07:00",
+  "synced_at": "2026-06-25T16:59:39+07:00",
   "rows": 3228,
   "columns": 23,
   "master_rows": 3228,
@@ -11,5 +11,10 @@
   "parent_set_web_url_rows": 41,
   "public_http_image_rows": 3038,
   "local_asset_image_rows": 180,
-  "last_updated": "2026-06-22T19:41:06+07:00"
+  "source_group_labels_updated": true,
+  "netdecor_source_label": "Giường gia công",
+  "vinamax_source_label": "Tủ Gia Công",
+  "auth_users_store": "Google Drive productdb_auth_users.json",
+  "auth_users_file_id": "1fjqkUtHCpmbR4YPJAvlFR_9fdAWKjoq6",
+  "last_updated": "2026-06-25T16:59:39+07:00"
 }
