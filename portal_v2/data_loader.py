@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from pathlib import Path
 from urllib.parse import urlparse
 from zipfile import ZipFile
+import re
 
 import pandas as pd
 import streamlit as st
@@ -150,7 +150,9 @@ _install_bundled_data()
 @st.cache_data(show_spinner=False)
 def _read_master(path: str, modified_ns: int) -> pd.DataFrame:
     del modified_ns
-    frame = pd.read_excel(path, sheet_name="MASTER_DB")
+    workbook = pd.ExcelFile(path)
+    sheet_name = "MASTER_DB" if "MASTER_DB" in workbook.sheet_names else workbook.sheet_names[0]
+    frame = pd.read_excel(workbook, sheet_name=sheet_name)
     return frame.fillna("")
 
 
@@ -255,9 +257,13 @@ def resolve_product_images(product: object) -> list[str | Path]:
     for value in _split_image_values(image_value):
         add_image(resolve_image_source(value))
 
-    image_root = PROJECT_ROOT / "assets" / "product_images_multi" / source_group / code
-    if code and source_group and image_root.is_dir():
-        for path in sorted(image_root.iterdir()):
+    image_roots = [
+        PROJECT_ROOT / "assets" / "product_images_multi" / source_group / code,
+    ]
+    for root in image_roots:
+        if not code or not source_group or not root.is_dir():
+            continue
+        for path in sorted(root.iterdir()):
             if path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
                 add_image(path)
     return images
