@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import streamlit as st
 
 
@@ -12,6 +14,7 @@ SOURCE_LABELS = {
     "GIA_KE_SAT": "Giá kệ sắt",
     "HOC_SAT": "Hộc sắt",
     "HOC_TU_PHU_GO": "Hộc, tủ phụ gỗ",
+    "NETDECOR_GIUONG_SAT": "Giường gia công",
     "NOI_THAT_CONG_TRINH": "Nội thất công trình",
     "NOI_THAT_GIA_DINH": "Nội thất gia đình",
     "NOI_THAT_GIA_DUNG": "Nội thất gia dụng",
@@ -20,12 +23,36 @@ SOURCE_LABELS = {
     "SOFA": "Sofa",
     "TU_VAN_PHONG": "Tủ văn phòng",
     "VACH_VAN_PHONG": "Vách văn phòng",
+    "VINAMAX": "Tủ Gia Công",
+    "VINAMAX_TU_SAT_GC": "Tủ Gia Công",
 }
 
 
 def source_label(value: object) -> str:
     text = str(value or "").strip()
     return SOURCE_LABELS.get(text, text.replace("_", " ").title())
+
+
+def paginate_frame(frame, key: str, label: str = "Số sản phẩm hiển thị"):
+    total = len(frame)
+    size_col, page_col, info_col = st.columns([1.2, 1, 2.2])
+    page_size = size_col.selectbox(label, [24, 48, 96], index=0, key=f"{key}-page-size")
+    page_count = max(1, math.ceil(total / page_size))
+    current_value = min(int(st.session_state.get(f"{key}-page", 1)), page_count)
+    page = int(
+        page_col.number_input(
+            "Trang",
+            min_value=1,
+            max_value=page_count,
+            value=current_value,
+            step=1,
+            key=f"{key}-page",
+        )
+    )
+    start = (page - 1) * page_size
+    end = min(start + page_size, total)
+    info_col.caption(f"Trang {page}/{page_count} - hiển thị {start + 1 if total else 0}-{end} / {total:,}")
+    return frame.iloc[start:end]
 
 
 def apply_theme() -> None:
