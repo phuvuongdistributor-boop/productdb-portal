@@ -12,6 +12,11 @@
     "spreadsheet_id": "1TrLYfcI50f40-ARqxnp04rp8F7vhPHwKOTpk1U8_GSk",
     "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1TrLYfcI50f40-ARqxnp04rp8F7vhPHwKOTpk1U8_GSk/edit"
   },
+  "auth_users": {
+    "file_id": "1fjqkUtHCpmbR4YPJAvlFR_9fdAWKjoq6",
+    "file_url": "https://drive.google.com/file/d/1fjqkUtHCpmbR4YPJAvlFR_9fdAWKjoq6/view",
+    "description": "Persistent portal user store. Admin edits are saved here instead of runtime session storage."
+  },
   "data_bundle": {
     "file_id": "1vqwNz9RwoYJ-iACiEXyE4O0z9l-W8R89",
     "file_url": "https://drive.google.com/file/d/1vqwNz9RwoYJ-iACiEXyE4O0z9l-W8R89/view",
