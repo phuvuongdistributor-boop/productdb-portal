@@ -3,11 +3,11 @@ from __future__ import annotations
 import streamlit as st
 
 from auth import require_auth
+from cart import cart_count
 from components.filters import apply_filters
 from components.product_card import render_product_card
 from data_loader import load_products_or_stop
-from cart import cart_count
-from ui import apply_theme
+from ui import apply_theme, paginate_frame
 
 
 st.set_page_config(page_title="Tìm kiếm | ProductDB V2", layout="wide")
@@ -32,9 +32,9 @@ if query.strip():
     filtered = filtered[mask]
 
 st.caption(f"Tìm thấy {len(filtered):,} SKU")
-limit = st.selectbox("Số sản phẩm hiển thị", [24, 48, 96], index=0)
-for start in range(0, min(len(filtered), limit), 4):
+page_frame = paginate_frame(filtered, "search")
+for start in range(0, len(page_frame), 4):
     columns = st.columns(4)
-    for container, (_, product) in zip(columns, filtered.iloc[start:start + 4].iterrows()):
+    for container, (_, product) in zip(columns, page_frame.iloc[start:start + 4].iterrows()):
         with container:
             render_product_card(product)
