@@ -6,7 +6,7 @@ import streamlit as st
 
 from components.catalog_image import catalog_image
 from data_loader import load_products_or_stop
-from ui import apply_theme, source_label
+from ui import apply_theme, paginate_frame, source_label
 
 
 st.set_page_config(page_title="Catalog sản phẩm", page_icon="P", layout="wide")
@@ -58,8 +58,10 @@ if code:
             st.caption(html.escape(str(product.get("Code", ""))))
             st.title(str(product.get("ProductName", "Sản phẩm")))
             for label, field in [
-                ("Mô tả", "Description"), ("Kích thước", "Size"),
-                ("Vật liệu", "Material"), ("Danh mục", "Category"),
+                ("Mô tả", "Description"),
+                ("Kích thước", "Size"),
+                ("Vật liệu", "Material"),
+                ("Danh mục", "Category"),
                 ("Nhóm sản phẩm", "SubCategory"),
             ]:
                 value = str(product.get(field, "")).strip()
@@ -73,7 +75,11 @@ if code:
 query_col, source_col, category_col = st.columns([2.2, 1.4, 1.4])
 query = query_col.text_input("Tìm sản phẩm", placeholder="Nhập mã, tên hoặc mô tả...")
 sources = sorted(value for value in products["Source_Group"].astype(str).unique() if value.strip())
-selected_source = source_col.selectbox("Nguồn sản phẩm", [""] + sources, format_func=lambda value: source_label(value) if value else "Tất cả")
+selected_source = source_col.selectbox(
+    "Nguồn sản phẩm",
+    [""] + sources,
+    format_func=lambda value: source_label(value) if value else "Tất cả",
+)
 categories = sorted(value for value in products["Category"].astype(str).unique() if value.strip())
 selected_category = category_col.selectbox("Danh mục", [""] + categories, format_func=lambda value: value or "Tất cả")
 
@@ -90,10 +96,10 @@ if selected_category:
     filtered = filtered[filtered["Category"].astype(str) == selected_category]
 
 st.caption(f"Tìm thấy {len(filtered):,} sản phẩm")
-limit = st.selectbox("Số sản phẩm hiển thị", [24, 48, 96], index=0)
-for start in range(0, min(len(filtered), limit), 4):
+page_frame = paginate_frame(filtered, "catalog")
+for start in range(0, len(page_frame), 4):
     columns = st.columns(4)
-    for container, (_, product) in zip(columns, filtered.iloc[start:start + 4].iterrows()):
+    for container, (_, product) in zip(columns, page_frame.iloc[start:start + 4].iterrows()):
         with container:
             with st.container(border=True):
                 image = catalog_image(product.get("Image_URL", ""))
@@ -104,7 +110,10 @@ for start in range(0, min(len(filtered), limit), 4):
                         '<div class="catalog-image-placeholder">Chưa có hình ảnh</div>',
                         unsafe_allow_html=True,
                     )
-                st.markdown(f'<div class="customer-code">{html.escape(str(product.get("Code", "")))}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="customer-code">{html.escape(str(product.get("Code", "")))}</div>',
+                    unsafe_allow_html=True,
+                )
                 st.markdown(
                     f'<div class="catalog-product-name">{html.escape(str(product.get("ProductName", "")))}</div>',
                     unsafe_allow_html=True,
