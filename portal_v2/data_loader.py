@@ -184,6 +184,18 @@ def _extract_bundle_member(relative_path: Path) -> Path | None:
     try:
         with ZipFile(bundle_path) as archive:
             if member_name not in archive.namelist():
+                if _data_source_mode() == "drive":
+                    refreshed = _download_drive_bundle(_load_drive_bundle_config())
+                    if refreshed is not None and refreshed.is_file() and refreshed != bundle_path:
+                        bundle_path = refreshed
+                    else:
+                        return None
+                    with ZipFile(bundle_path) as refreshed_archive:
+                        if member_name not in refreshed_archive.namelist():
+                            return None
+                        refreshed_archive.extract(member_name, PROJECT_ROOT)
+                    extracted = PROJECT_ROOT / relative_path
+                    return extracted if extracted.is_file() else None
                 return None
             archive.extract(member_name, PROJECT_ROOT)
     except Exception:
