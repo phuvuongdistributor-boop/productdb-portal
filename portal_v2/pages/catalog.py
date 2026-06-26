@@ -9,7 +9,14 @@ from data_loader import load_products_or_stop
 from ui import apply_theme, paginate_frame, source_label
 
 
-st.set_page_config(page_title="Catalog sản phẩm", page_icon="P", layout="wide")
+def image_placeholder(product) -> str:
+    status = str(product.get("Image_Status", "")).strip().upper()
+    if status == "WATERMARK_REVIEW":
+        return "Anh dang cap nhat"
+    return "Chua co hinh anh"
+
+
+st.set_page_config(page_title="Catalog san pham", page_icon="P", layout="wide")
 apply_theme()
 st.markdown(
     """
@@ -34,8 +41,8 @@ st.markdown(
 st.markdown(
     """
     <section class="catalog-hero">
-      <h1>Catalog nội thất</h1>
-      <p>Tra cứu sản phẩm và liên hệ tư vấn kích thước, vật liệu, màu sắc theo yêu cầu.</p>
+      <h1>Catalog noi that</h1>
+      <p>Tra cuu san pham va lien he tu van kich thuoc, vat lieu, mau sac theo yeu cau.</p>
     </section>
     """,
     unsafe_allow_html=True,
@@ -47,41 +54,46 @@ if code:
     matches = products[products["Code"].astype(str).str.casefold() == code.casefold()]
     product = None if matches.empty else matches.iloc[0]
     if product is None:
-        st.error("Không tìm thấy sản phẩm.")
+        st.error("Khong tim thay san pham.")
     else:
         image_col, detail_col = st.columns([1, 1.25], gap="large")
         with image_col:
             image = catalog_image(product.get("Image_URL", ""))
             if image:
                 st.image(image, width="stretch")
+            else:
+                st.markdown(
+                    f'<div class="catalog-image-placeholder">{html.escape(image_placeholder(product))}</div>',
+                    unsafe_allow_html=True,
+                )
         with detail_col:
             st.caption(html.escape(str(product.get("Code", ""))))
-            st.title(str(product.get("ProductName", "Sản phẩm")))
+            st.title(str(product.get("ProductName", "San pham")))
             for label, field in [
-                ("Mô tả", "Description"),
-                ("Kích thước", "Size"),
-                ("Vật liệu", "Material"),
-                ("Danh mục", "Category"),
-                ("Nhóm sản phẩm", "SubCategory"),
+                ("Mo ta", "Description"),
+                ("Kich thuoc", "Size"),
+                ("Vat lieu", "Material"),
+                ("Danh muc", "Category"),
+                ("Nhom san pham", "SubCategory"),
             ]:
                 value = str(product.get(field, "")).strip()
                 if value:
                     st.markdown(f"**{label}:** {html.escape(value)}")
-            st.info("Liên hệ để nhận giá và phương án phù hợp nhu cầu của bạn.")
+            st.info("Lien he de nhan gia va phuong an phu hop nhu cau cua ban.")
             st.markdown("### Hotline: 0929.878.666")
-            st.link_button("Xem toàn bộ catalog", "catalog", width="stretch")
+            st.link_button("Xem toan bo catalog", "catalog", width="stretch")
     st.stop()
 
 query_col, source_col, category_col = st.columns([2.2, 1.4, 1.4])
-query = query_col.text_input("Tìm sản phẩm", placeholder="Nhập mã, tên hoặc mô tả...")
+query = query_col.text_input("Tim san pham", placeholder="Nhap ma, ten hoac mo ta...")
 sources = sorted(value for value in products["Source_Group"].astype(str).unique() if value.strip())
 selected_source = source_col.selectbox(
-    "Nguồn sản phẩm",
+    "Nguon san pham",
     [""] + sources,
-    format_func=lambda value: source_label(value) if value else "Tất cả",
+    format_func=lambda value: source_label(value) if value else "Tat ca",
 )
 categories = sorted(value for value in products["Category"].astype(str).unique() if value.strip())
-selected_category = category_col.selectbox("Danh mục", [""] + categories, format_func=lambda value: value or "Tất cả")
+selected_category = category_col.selectbox("Danh muc", [""] + categories, format_func=lambda value: value or "Tat ca")
 
 filtered = products
 if query.strip():
@@ -95,7 +107,7 @@ if selected_source:
 if selected_category:
     filtered = filtered[filtered["Category"].astype(str) == selected_category]
 
-st.caption(f"Tìm thấy {len(filtered):,} sản phẩm")
+st.caption(f"Tim thay {len(filtered):,} san pham")
 page_frame = paginate_frame(filtered, "catalog")
 for start in range(0, len(page_frame), 4):
     columns = st.columns(4)
@@ -107,7 +119,7 @@ for start in range(0, len(page_frame), 4):
                     st.image(image, width="stretch")
                 else:
                     st.markdown(
-                        '<div class="catalog-image-placeholder">Chưa có hình ảnh</div>',
+                        f'<div class="catalog-image-placeholder">{html.escape(image_placeholder(product))}</div>',
                         unsafe_allow_html=True,
                     )
                 st.markdown(
@@ -119,12 +131,12 @@ for start in range(0, len(page_frame), 4):
                     unsafe_allow_html=True,
                 )
                 st.caption(source_label(product.get("Source_Group", "")))
-                st.link_button("Xem chi tiết", f"catalog?code={product.get('Code', '')}", width="stretch")
+                st.link_button("Xem chi tiet", f"catalog?code={product.get('Code', '')}", width="stretch")
 
 st.markdown(
     """
     <div style="text-align:center;background:#fff8e7;border:1px solid #f0d58c;border-radius:16px;padding:18px;margin-top:25px">
-      Sản phẩm có thể thay đổi kích thước, vật liệu và màu sắc theo yêu cầu.<br>
+      San pham co the thay doi kich thuoc, vat lieu va mau sac theo yeu cau.<br>
       <strong style="color:#b42318;font-size:1.2rem">Hotline: 0929.878.666</strong>
     </div>
     """,
