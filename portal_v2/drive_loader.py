@@ -57,7 +57,7 @@ def load_products_from_drive() -> pd.DataFrame:
     config = load_drive_config()["master_live"]
     spreadsheet_id = config["spreadsheet_id"]
     sheet_name = config["sheet_name"]
-    value_range = quote(f"{sheet_name}!A:AJ", safe="")
+    value_range = quote(f"{sheet_name}!A:AN", safe="")
     endpoint = (
         f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}"
         f"/values/{value_range}?valueRenderOption=UNFORMATTED_VALUE"
