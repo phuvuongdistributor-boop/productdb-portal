@@ -10,9 +10,16 @@ from cart import add_product
 
 def format_price(value: object) -> str:
     try:
-        return f"{float(value):,.0f} đ".replace(",", ".")
+        return f"{float(value):,.0f} d".replace(",", ".")
     except (TypeError, ValueError):
-        return "Liên hệ"
+        return "Lien he"
+
+
+def image_placeholder(product) -> str:
+    status = str(product.get("Image_Status", "")).strip().upper()
+    if status == "WATERMARK_REVIEW":
+        return "Anh dang cap nhat"
+    return "Chua co hinh anh"
 
 
 def render_product_card(product) -> None:
@@ -20,7 +27,10 @@ def render_product_card(product) -> None:
     if image:
         st.image(image, width="stretch")
     else:
-        st.markdown('<div class="image-placeholder">Chưa có hình ảnh</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="image-placeholder">{html.escape(image_placeholder(product))}</div>',
+            unsafe_allow_html=True,
+        )
     st.markdown(
         f"""
         <div class="product-card-body">
@@ -33,11 +43,11 @@ def render_product_card(product) -> None:
         unsafe_allow_html=True,
     )
     left, right = st.columns(2)
-    if left.button("Chi tiết", key=f"detail-{product.name}", width="stretch"):
+    if left.button("Chi tiet", key=f"detail-{product.name}", width="stretch"):
         st.session_state["selected_code"] = str(product.get("Code", ""))
         st.session_state["selected_row_id"] = str(product.name)
         st.switch_page("pages/product_detail.py")
-    if right.button("Thêm báo giá", key=f"cart-{product.name}", width="stretch"):
+    if right.button("Them bao gia", key=f"cart-{product.name}", width="stretch"):
         add_product(product)
-        st.session_state["cart_notice"] = f"Đã thêm {product.get('Code', '')} vào báo giá"
+        st.session_state["cart_notice"] = f"Da them {product.get('Code', '')} vao bao gia"
         st.rerun()
