@@ -5,7 +5,7 @@
     "spreadsheet_id": "1JDwIHiF4c-9T8lNfR0HNBUUjhdGpPXrxWV-1986gdQg",
     "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1JDwIHiF4c-9T8lNfR0HNBUUjhdGpPXrxWV-1986gdQg/edit",
     "sheet_name": "MASTER_DB",
-    "rows": 3228,
+    "rows": 3301,
     "columns": 41
   },
   "audit_live": {
@@ -20,6 +20,6 @@
   "data_bundle": {
     "file_id": "1vqwNz9RwoYJ-iACiEXyE4O0z9l-W8R89",
     "file_url": "https://drive.google.com/file/d/1vqwNz9RwoYJ-iACiEXyE4O0z9l-W8R89/view",
-    "description": "MASTER_DB 3228, local images, Netdecor bed originals, and Vinamax cabinet temp/clean images for Render startup"
+    "description": "MASTER_DB 3301, local images, Netdecor bed originals, Vinamax cabinet images, and Sanxuattusat custom cabinet images for Render startup"
   }
 }
