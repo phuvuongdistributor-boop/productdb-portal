@@ -13,9 +13,13 @@ from quotation_v2.watermark import apply_phone_watermark
 
 def _should_apply_phone_watermark(source: str) -> bool:
     normalized = source.replace("\\", "/").lower()
-    return "/placeholders/" not in normalized and not normalized.startswith(
-        "assets/product_images_cleaned/placeholders/"
+    excluded = (
+        "/placeholders/",
+        "/neutral_temp_3d/",
+        "assets/product_images_cleaned/placeholders/",
+        "assets/product_images_cleaned/neutral_temp_3d/",
     )
+    return not any(marker in normalized for marker in excluded)
 
 
 @st.cache_data(show_spinner=False, ttl=3600)
