@@ -1,14 +1,14 @@
 {
-  "source": "Google Sheet LIVE 3228 + neutral 3D temp images for watermark rows",
-  "spreadsheet_id": "1LJIsGCPWkit9PF3k9BYinxVZTT22aqzxH2iQbhTeNys",
-  "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1LJIsGCPWkit9PF3k9BYinxVZTT22aqzxH2iQbhTeNys/edit",
+  "source": "Google Sheet LIVE 3228 + SketchUp-style temp images for 88 watermark rows",
+  "spreadsheet_id": "1gCvncMtKfTv3kSwnnqwpeticJ8ie9duZ0ltL4-NV6G4",
+  "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1gCvncMtKfTv3kSwnnqwpeticJ8ie9duZ0ltL4-NV6G4/edit",
   "synced_at": "2026-06-25T23:02:55+07:00",
   "rows": 3228,
   "columns": 40,
   "master_rows": 3228,
   "recovered_render_ready_images": 685,
   "remaining_pdf_image_paths": 0,
-  "last_updated": "2026-06-27T09:08:45",
+  "last_updated": "2026-06-27T10:45:00",
   "no_image_required_accessory_rows": 10,
   "render_ready_local_images": 698,
   "parent_set_image_rows": 41,
@@ -22,8 +22,8 @@
   "auth_users_file_id": "1fjqkUtHCpmbR4YPJAvlFR_9fdAWKjoq6",
   "imported_source_rembg_rows": 0,
   "imported_source_rembg_ready": 0,
-  "data_bundle_size_bytes": 17637959,
-  "last_bundle_refresh": "2026-06-27T09:08:45",
+  "data_bundle_size_bytes": 18712686,
+  "last_bundle_refresh": "2026-06-27T10:39:47",
   "imported_source_description_cleaned": true,
   "imported_source_image_mode": "IMPORT_CLEAN_STANDARD",
   "imported_source_image_rows": 138,
@@ -31,5 +31,6 @@
   "watermark_quarantined_rows": 88,
   "watermark_replacement_pending_rows": 88,
   "watermark_placeholder_rows": 0,
-  "neutral_3d_temp_rows": 88
+  "neutral_3d_temp_rows": 0,
+  "sketchup_style_temp_rows": 88
 }
