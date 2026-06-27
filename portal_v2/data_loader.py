@@ -66,6 +66,15 @@ def _read_local_fallback_master() -> pd.DataFrame:
     return products
 
 
+def _read_local_master_if_newer_than(products: pd.DataFrame) -> pd.DataFrame | None:
+    if not MASTER_DB_PATH.exists():
+        return None
+    local_products = _read_master(str(MASTER_DB_PATH), MASTER_DB_PATH.stat().st_mtime_ns)
+    if len(local_products) > len(products):
+        return local_products
+    return None
+
+
 def _load_drive_bundle_config() -> dict:
     config_path = PROJECT_ROOT / "config" / "drive_config.json"
     if not config_path.is_file():
@@ -225,6 +234,15 @@ def load_products() -> pd.DataFrame:
             from drive_loader import load_products_from_drive
         try:
             products = load_products_from_drive()
+            newer_local_products = _read_local_master_if_newer_than(products)
+            if newer_local_products is not None:
+                LAST_DATA_SOURCE = "Drive bundle MASTER_DB.xlsx"
+                DRIVE_HEALTH["sheet_ok"] = True
+                DRIVE_HEALTH["sheet_message"] = (
+                    f"Read Google Sheet LIVE: {len(products):,} rows. "
+                    f"Using newer Drive bundle MASTER_DB: {len(newer_local_products):,} rows."
+                )
+                return newer_local_products
             LAST_DATA_SOURCE = "Google Sheets MASTER_DB"
             DRIVE_HEALTH["sheet_ok"] = True
             DRIVE_HEALTH["sheet_message"] = f"Read Google Sheet LIVE: {len(products):,} rows."
