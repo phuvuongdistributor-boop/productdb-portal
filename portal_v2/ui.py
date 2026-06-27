@@ -14,7 +14,7 @@ SOURCE_LABELS = {
     "GIA_KE_SAT": "Giá kệ sắt",
     "HOC_SAT": "Hộc sắt",
     "HOC_TU_PHU_GO": "Hộc, tủ phụ gỗ",
-    "NETDECOR_GIUONG_SAT": "Giường gia công",
+    "NETDECOR_GIUONG_SAT": "Giường sắt gia công",
     "NOI_THAT_CONG_TRINH": "Nội thất công trình",
     "NOI_THAT_GIA_DINH": "Nội thất gia đình",
     "NOI_THAT_GIA_DUNG": "Nội thất gia dụng",
