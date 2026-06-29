@@ -3,17 +3,18 @@ from __future__ import annotations
 import streamlit as st
 
 from auth import require_auth
+from cart import add_product, cart_count
 from components.image_viewer import render_product_gallery
 from components.product_card import format_price
 from data_loader import load_products_or_stop
 from public_links import catalog_url
-from cart import add_product, cart_count
 from ui import apply_theme
 
 
 st.set_page_config(page_title="Chi tiết sản phẩm | ProductDB V2", layout="wide")
 apply_theme()
 require_auth()
+
 code = st.query_params.get("code") or st.session_state.get("selected_code", "")
 if not code:
     st.warning("Hãy chọn một sản phẩm từ trang tìm kiếm.")
@@ -37,15 +38,23 @@ with left:
 with right:
     st.caption(str(product.get("Code", "")))
     st.markdown(f"## {format_price(product.get('SalePrice'))}")
-    fields = ["Description", "Size", "Material", "CatalogPrice", "SalePrice", "Hotline"]
-    for field in fields:
-        value = product.get(field, "")
-        if field in {"CatalogPrice", "SalePrice"}:
-            value = format_price(value)
-        st.markdown(f"**{field}:** {value or 'Đang cập nhật'}")
-    source_url = str(product.get("Source_URL", "")).strip()
+
+    description = str(product.get("Description_Clean", "") or product.get("Description", "") or "").strip()
+    fields = [
+        ("Mô tả", description),
+        ("Kích thước", product.get("Product_Size", "") or product.get("Size", "")),
+        ("Vật liệu", product.get("Material", "")),
+        ("Giá catalog", format_price(product.get("CatalogPrice"))),
+        ("Giá bán", format_price(product.get("SalePrice"))),
+        ("Hotline", product.get("Hotline", "")),
+    ]
+    for label, value in fields:
+        st.markdown(f"**{label}:** {value or 'Đang cập nhật'}")
+
+    source_url = str(product.get("Source_URL", "") or product.get("Product_URL", "")).strip()
     if source_url:
         st.link_button("Xem nguồn sản phẩm", source_url)
+
     quantity = st.number_input("Số lượng", min_value=1, value=1, step=1)
     action_left, action_right = st.columns(2)
     if action_left.button("Thêm vào báo giá", type="primary", width="stretch"):
