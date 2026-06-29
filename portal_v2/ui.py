@@ -15,6 +15,8 @@ SOURCE_LABELS = {
     "HOC_SAT": "Hộc sắt",
     "HOC_TU_PHU_GO": "Hộc, tủ phụ gỗ",
     "NETDECOR_GIUONG_SAT": "Giường sắt gia công",
+    "Giường gia công": "Giường sắt gia công",
+    "Giường sắt gia công": "Giường sắt gia công",
     "NOI_THAT_CONG_TRINH": "Nội thất công trình",
     "NOI_THAT_GIA_DINH": "Nội thất gia đình",
     "NOI_THAT_GIA_DUNG": "Nội thất gia dụng",
@@ -25,6 +27,8 @@ SOURCE_LABELS = {
     "VACH_VAN_PHONG": "Vách văn phòng",
     "VINAMAX": "Tủ Gia Công",
     "VINAMAX_TU_SAT_GC": "Tủ Gia Công",
+    "Tủ Gia Công": "Tủ Gia Công",
+    "Tủ Gia Công 2": "Tủ Gia Công 2",
 }
 
 
@@ -33,7 +37,7 @@ def source_label(value: object) -> str:
     return SOURCE_LABELS.get(text, text.replace("_", " ").title())
 
 
-def paginate_frame(frame, key: str, label: str = "Số sản phẩm hiển thị"):
+def paginate_frame(frame, key: str, label: str = "Số lượng sản phẩm hiển thị"):
     total = len(frame)
     size_col, page_col, info_col = st.columns([1.2, 1, 2.2])
     page_size = size_col.selectbox(label, [24, 48, 96], index=0, key=f"{key}-page-size")
