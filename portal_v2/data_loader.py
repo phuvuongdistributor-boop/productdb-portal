@@ -70,7 +70,7 @@ def _read_local_master_if_newer_than(products: pd.DataFrame) -> pd.DataFrame | N
     if not MASTER_DB_PATH.exists():
         return None
     local_products = _read_master(str(MASTER_DB_PATH), MASTER_DB_PATH.stat().st_mtime_ns)
-    if len(local_products) > len(products):
+    if len(local_products) >= len(products):
         return local_products
     return None
 
