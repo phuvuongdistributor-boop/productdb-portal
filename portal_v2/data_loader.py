@@ -385,6 +385,11 @@ def _split_image_values(value: object) -> list[str]:
     return [part.strip() for part in re.split(r"[\n;|]+", text) if part.strip()]
 
 
+def _is_test_portal_static(value: object) -> bool:
+    normalized = str(value or "").replace("\\", "/").lower()
+    return "assets/portal_static/products/" in normalized
+
+
 def resolve_product_images(product: object) -> list[str | Path]:
     try:
         image_value = product.get("Image_URL", "")
@@ -413,29 +418,24 @@ def resolve_product_images(product: object) -> list[str | Path]:
         seen.add(key)
         images.append(candidate)
 
-    for value in _split_image_values(hero_value):
+    for value in _split_image_values(image_value):
         add_image(resolve_image_source(value))
 
+    for value in _split_image_values(hero_value):
+        if not _is_test_portal_static(value):
+            add_image(resolve_image_source(value))
+
     for value in _split_image_values(gallery_value):
-        add_image(resolve_image_source(value))
+        if not _is_test_portal_static(value):
+            add_image(resolve_image_source(value))
 
     if len(images) >= 4:
         return images
 
     image_roots = [
-        PROJECT_ROOT / "assets" / "portal_static" / "products" / code / "gallery",
         PROJECT_ROOT / "render_assets" / "products" / code / "gallery",
         PROJECT_ROOT / "assets" / "product_images_multi" / source_group / code,
     ]
-    if code:
-        for index in range(1, 5):
-            bundled_gallery = Path(
-                f"assets/portal_static/products/{code}/gallery/{code}_gallery_{index:02d}.jpg"
-            )
-            add_image(resolve_image_source(bundled_gallery))
-        if len(images) >= 4:
-            return images
-
     for root in image_roots:
         if not code or not root.is_dir():
             continue
@@ -447,10 +447,8 @@ def resolve_product_images(product: object) -> list[str | Path]:
         return images
 
     for value in _split_image_values(thumbnail_value):
-        add_image(resolve_image_source(value))
-
-    for value in _split_image_values(image_value):
-        add_image(resolve_image_source(value))
+        if not _is_test_portal_static(value):
+            add_image(resolve_image_source(value))
     return images
 
 
