@@ -22,18 +22,24 @@ def render_image(url: object, caption: str = "") -> None:
         st.info(image_missing_message())
 
 
-def render_product_gallery(product) -> None:
+def render_product_gallery(product, max_thumbnails: int = 4) -> None:
     images = resolve_product_images(product)
     code = str(product.get("Code", "")) if hasattr(product, "get") else ""
     if not images:
         st.info(image_missing_message(product))
         return
-    st.image(images[0], caption=code, width="stretch")
-    if len(images) <= 1:
-        return
-    st.caption(f"{len(images)} hinh anh")
-    for start in range(1, len(images), 3):
-        columns = st.columns(3)
-        for column, image in zip(columns, images[start:start + 3]):
+    selected_key = f"gallery_selected_image_{code}"
+    selected = st.session_state.get(selected_key, images[0])
+    if selected not in images:
+        selected = images[0]
+    st.caption(f"Gallery v3 - {len(images)} hinh anh")
+    if len(images) > 1:
+        visible_images = images[:max(1, max_thumbnails)]
+        columns = st.columns(min(len(visible_images), max_thumbnails))
+        for index, (column, image) in enumerate(zip(columns, visible_images), start=1):
             with column:
                 st.image(image, width="stretch")
+                if st.button(f"Anh {index}", key=f"gallery-{code}-{index}", width="stretch"):
+                    st.session_state[selected_key] = image
+                    st.rerun()
+    st.image(selected, caption=code, width="stretch")
