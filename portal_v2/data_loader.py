@@ -14,6 +14,7 @@ import streamlit as st
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MASTER_DB_PATH = PROJECT_ROOT / "master_v2" / "MASTER_DB.xlsx"
+PORTAL_ASSET_DB_PATH = PROJECT_ROOT / "data" / "master" / "MASTER_PORTAL_ASSETDB.xlsx"
 DATA_STATUS_PATH = PROJECT_ROOT / "config" / "portal_data_status.json"
 BUNDLED_DATA_PATH = PROJECT_ROOT / "deployment" / "productdb_data_bundle.zip"
 BUNDLED_DATA_MARKER = PROJECT_ROOT / ".productdb_data_bundle"
@@ -73,6 +74,53 @@ def _read_local_master_if_newer_than(products: pd.DataFrame) -> pd.DataFrame | N
     if len(local_products) >= len(products):
         return local_products
     return None
+
+
+def _asset_code(value: object) -> str:
+    return _safe_segment(value)
+
+
+@st.cache_data(show_spinner=False)
+def _read_portal_assetdb(path: str, modified_ns: int) -> pd.DataFrame:
+    del modified_ns
+    frame = pd.read_excel(path).fillna("")
+    if "Gallery_JSON" in frame.columns:
+        frame["Gallery"] = frame["Gallery_JSON"]
+    return frame
+
+
+def _enrich_portal_assets(products: pd.DataFrame) -> pd.DataFrame:
+    if not PORTAL_ASSET_DB_PATH.is_file() or "Code" not in products.columns:
+        return products
+    assetdb = _read_portal_assetdb(str(PORTAL_ASSET_DB_PATH), PORTAL_ASSET_DB_PATH.stat().st_mtime_ns)
+    if "Code" not in assetdb.columns:
+        return products
+    asset_columns = [
+        "Hero_Image",
+        "Thumbnail_Image",
+        "Gallery",
+        "Gallery_Count",
+        "Detail_Image",
+        "Render_Status",
+        "Portal_Ready",
+        "Quality_Status",
+    ]
+    available_columns = ["Asset_Code", *[column for column in asset_columns if column in assetdb.columns]]
+    assets = assetdb.copy()
+    assets["Asset_Code"] = assets["Code"].map(_asset_code)
+    assets = assets.drop_duplicates("Asset_Code")[available_columns]
+    enriched = products.copy()
+    enriched["Asset_Code"] = enriched["Code"].map(_asset_code)
+    enriched = enriched.merge(assets, on="Asset_Code", how="left", suffixes=("", "_Asset"))
+    for column in asset_columns:
+        asset_column = f"{column}_Asset"
+        if asset_column in enriched.columns:
+            if column in enriched.columns:
+                enriched[column] = enriched[asset_column].where(enriched[asset_column].astype(str).str.strip().ne(""), enriched[column])
+            else:
+                enriched[column] = enriched[asset_column]
+            enriched = enriched.drop(columns=[asset_column])
+    return enriched.drop(columns=["Asset_Code"], errors="ignore")
 
 
 def _load_drive_bundle_config() -> dict:
@@ -183,34 +231,37 @@ def _extract_bundle_member(relative_path: Path) -> Path | None:
     if not parts or parts[0] not in {"master_v2", "GHE_NHAP", "assets"} or ".." in parts:
         return None
     member_name = relative_path.as_posix()
-    bundle_path = LAST_BUNDLE_PATH
-    if bundle_path is None or not bundle_path.is_file():
-        bundle_path = _download_drive_bundle(_load_drive_bundle_config())
-    if (bundle_path is None or not bundle_path.is_file()) and BUNDLED_DATA_PATH.is_file():
-        bundle_path = BUNDLED_DATA_PATH
-    if bundle_path is None or not bundle_path.is_file():
-        return None
-    try:
+
+    def extract_from(bundle_path: Path | None) -> Path | None:
+        if bundle_path is None or not bundle_path.is_file():
+            return None
         with ZipFile(bundle_path) as archive:
             if member_name not in archive.namelist():
-                if _data_source_mode() == "drive":
-                    refreshed = _download_drive_bundle(_load_drive_bundle_config())
-                    if refreshed is not None and refreshed.is_file() and refreshed != bundle_path:
-                        bundle_path = refreshed
-                    else:
-                        return None
-                    with ZipFile(bundle_path) as refreshed_archive:
-                        if member_name not in refreshed_archive.namelist():
-                            return None
-                        refreshed_archive.extract(member_name, PROJECT_ROOT)
-                    extracted = PROJECT_ROOT / relative_path
-                    return extracted if extracted.is_file() else None
                 return None
             archive.extract(member_name, PROJECT_ROOT)
-    except Exception:
-        return None
-    extracted = PROJECT_ROOT / relative_path
-    return extracted if extracted.is_file() else None
+        extracted = PROJECT_ROOT / relative_path
+        return extracted if extracted.is_file() else None
+
+    bundle_candidates: list[Path] = []
+    if LAST_BUNDLE_PATH is not None:
+        bundle_candidates.append(LAST_BUNDLE_PATH)
+    refreshed = _download_drive_bundle(_load_drive_bundle_config()) if _data_source_mode() == "drive" else None
+    if refreshed is not None:
+        bundle_candidates.append(refreshed)
+    bundle_candidates.append(BUNDLED_DATA_PATH)
+
+    seen: set[Path] = set()
+    for bundle_path in bundle_candidates:
+        if bundle_path in seen:
+            continue
+        seen.add(bundle_path)
+        try:
+            extracted = extract_from(bundle_path)
+        except Exception:
+            extracted = None
+        if extracted is not None:
+            return extracted
+    return None
 
 
 _install_bundled_data()
@@ -236,6 +287,7 @@ def load_products() -> pd.DataFrame:
             products = load_products_from_drive()
             newer_local_products = _read_local_master_if_newer_than(products)
             if newer_local_products is not None:
+                newer_local_products = _enrich_portal_assets(newer_local_products)
                 LAST_DATA_SOURCE = "Drive bundle MASTER_DB.xlsx"
                 DRIVE_HEALTH["sheet_ok"] = True
                 DRIVE_HEALTH["sheet_message"] = (
@@ -246,7 +298,7 @@ def load_products() -> pd.DataFrame:
             LAST_DATA_SOURCE = "Google Sheets MASTER_DB"
             DRIVE_HEALTH["sheet_ok"] = True
             DRIVE_HEALTH["sheet_message"] = f"Read Google Sheet LIVE: {len(products):,} rows."
-            return products
+            return _enrich_portal_assets(products)
         except Exception as error:
             DRIVE_HEALTH["sheet_ok"] = False
             DRIVE_HEALTH["sheet_message"] = f"Could not read Google Sheet LIVE: {error}"
@@ -255,12 +307,12 @@ def load_products() -> pd.DataFrame:
             if not MASTER_DB_PATH.exists():
                 raise
             LAST_DATA_SOURCE = "Local MASTER_DB.xlsx (Drive fallback)"
-            return _read_local_fallback_master()
+            return _enrich_portal_assets(_read_local_fallback_master())
     if not MASTER_DB_PATH.exists():
         raise FileNotFoundError(
             f"Missing {MASTER_DB_PATH}. Run: python portal_v2/build_master_db.py"
         )
-    return _read_master(str(MASTER_DB_PATH), MASTER_DB_PATH.stat().st_mtime_ns)
+    return _enrich_portal_assets(_read_master(str(MASTER_DB_PATH), MASTER_DB_PATH.stat().st_mtime_ns))
 
 
 def load_products_or_stop() -> pd.DataFrame:
@@ -318,19 +370,34 @@ def _safe_segment(value: object) -> str:
 
 
 def _split_image_values(value: object) -> list[str]:
+    if isinstance(value, (list, tuple)):
+        return [str(part).strip() for part in value if str(part).strip()]
     text = str(value or "").strip()
     if not text:
         return []
+    if text.startswith("[") and text.endswith("]"):
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, list):
+                return [str(part).strip() for part in parsed if str(part).strip()]
+        except json.JSONDecodeError:
+            pass
     return [part.strip() for part in re.split(r"[\n;|]+", text) if part.strip()]
 
 
 def resolve_product_images(product: object) -> list[str | Path]:
     try:
         image_value = product.get("Image_URL", "")
+        hero_value = product.get("Hero_Image", "")
+        gallery_value = product.get("Gallery", "")
+        thumbnail_value = product.get("Thumbnail_Image", "")
         code = _safe_segment(product.get("Code", ""))
         source_group = _safe_segment(product.get("Source_Group", "")).lower()
     except AttributeError:
         image_value = ""
+        hero_value = ""
+        gallery_value = ""
+        thumbnail_value = ""
         code = ""
         source_group = ""
 
@@ -340,25 +407,76 @@ def resolve_product_images(product: object) -> list[str | Path]:
     def add_image(candidate: str | Path | None) -> None:
         if not candidate:
             return
-        key = str(candidate)
+        key = str(candidate.resolve()) if isinstance(candidate, Path) else str(candidate)
         if key in seen:
             return
         seen.add(key)
         images.append(candidate)
 
-    for value in _split_image_values(image_value):
+    for value in _split_image_values(hero_value):
         add_image(resolve_image_source(value))
 
+    for value in _split_image_values(gallery_value):
+        add_image(resolve_image_source(value))
+
+    if len(images) >= 4:
+        return images
+
     image_roots = [
+        PROJECT_ROOT / "assets" / "portal_static" / "products" / code / "gallery",
+        PROJECT_ROOT / "render_assets" / "products" / code / "gallery",
         PROJECT_ROOT / "assets" / "product_images_multi" / source_group / code,
     ]
+    if code:
+        for index in range(1, 5):
+            bundled_gallery = Path(
+                f"assets/portal_static/products/{code}/gallery/{code}_gallery_{index:02d}.jpg"
+            )
+            add_image(resolve_image_source(bundled_gallery))
+        if len(images) >= 4:
+            return images
+
     for root in image_roots:
-        if not code or not source_group or not root.is_dir():
+        if not code or not root.is_dir():
             continue
         for path in sorted(root.iterdir()):
             if path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
                 add_image(path)
+
+    if len(images) >= 4:
+        return images
+
+    for value in _split_image_values(thumbnail_value):
+        add_image(resolve_image_source(value))
+
+    for value in _split_image_values(image_value):
+        add_image(resolve_image_source(value))
     return images
+
+
+def resolve_product_thumbnail(product: object) -> str | Path | None:
+    try:
+        values = [
+            product.get("Thumbnail_Image", ""),
+            product.get("Hero_Image", ""),
+            product.get("Image_URL", ""),
+        ]
+        code = _safe_segment(product.get("Code", ""))
+    except AttributeError:
+        values = []
+        code = ""
+    for value in values:
+        for item in _split_image_values(value):
+            resolved = resolve_image_source(item)
+            if resolved:
+                return resolved
+    render_thumb_root = PROJECT_ROOT / "render_assets" / "products" / code / "thumbnail"
+    if code and render_thumb_root.is_dir():
+        for path in sorted(render_thumb_root.iterdir()):
+            if path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
+                return path
+    images = resolve_product_images(product)
+    return images[0] if images else None
 
 
 def count_products_with_images(products: pd.DataFrame) -> int:
